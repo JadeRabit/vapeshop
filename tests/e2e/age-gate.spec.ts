@@ -88,7 +88,6 @@ test.describe("21+ age gate", () => {
         name: siteConfig.ageCookieName,
         value: ageCookieValue(expired),
         url: new URL(baseURL ?? "http://localhost:3000").origin,
-        path: "/",
         expires: Math.floor((Date.now() + 60_000) / 1000),
       },
     ]);
