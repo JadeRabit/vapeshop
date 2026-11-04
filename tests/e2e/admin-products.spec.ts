@@ -1,8 +1,8 @@
 import {
   adminCredentials,
+  adminLogin,
   expect,
   hasAdminCredentials,
-  login,
   test,
 } from "./fixtures";
 
@@ -10,7 +10,7 @@ test.describe("admin product validation", () => {
   test.skip(!hasAdminCredentials(), "Set E2E_ADMIN_EMAIL/PASSWORD or seed admin credentials.");
 
   test("keeps a product open and blocks publishing without images", async ({ page }) => {
-    await login(page, adminCredentials, "/admin/products");
+    await adminLogin(page, adminCredentials, "/admin/products");
     await expect(page.getByRole("heading", { name: "Products", level: 1 })).toBeVisible();
 
     await page.getByRole("button", { name: "Add product" }).first().click();

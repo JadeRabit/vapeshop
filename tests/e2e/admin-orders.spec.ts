@@ -2,11 +2,11 @@ import { PrismaClient } from "@prisma/client";
 import { siteConfig } from "../../lib/config";
 import {
   adminCredentials,
+  adminLogin,
   customerCredentials,
   expect,
   hasAdminCredentials,
   hasCustomerCredentials,
-  login,
   test,
 } from "./fixtures";
 
@@ -110,10 +110,12 @@ test.describe("admin order status transitions", () => {
   });
 
   test("moves a COD order through paid, shipped, and delivered", async ({ page }) => {
-    await login(page, adminCredentials, `/admin/orders/${orderNumber}`);
+    await adminLogin(page, adminCredentials, `/admin/orders/${orderNumber}`);
 
     await expect(page.getByRole("heading", { name: "Investigate & fulfil" })).toBeVisible();
-    await expect(page.getByText(`Order ${orderNumber}`)).toBeVisible();
+    await expect(
+      page.locator("#admin-main").getByText(`Order ${orderNumber}`, { exact: true }),
+    ).toBeVisible();
     await expect(page.getByText("Current status: Pending.")).toBeVisible();
 
     await page.getByRole("button", { name: "Mark paid" }).click();

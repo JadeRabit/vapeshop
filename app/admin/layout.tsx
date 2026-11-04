@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requirePageAdmin } from "@/lib/auth-guards";
+import { getAdminNavBadges } from "@/lib/data/admin-analytics";
 import { AdminShell } from "@/components/admin/admin-shell";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +14,14 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const admin = await requirePageAdmin();
+  const [admin, badges] = await Promise.all([requirePageAdmin(), getAdminNavBadges()]);
 
   return (
-    <AdminShell user={{ name: admin.name, email: admin.email }}>{children}</AdminShell>
+    <AdminShell
+      user={{ name: admin.name, email: admin.email }}
+      badges={badges}
+    >
+      {children}
+    </AdminShell>
   );
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { type Prisma } from "@prisma/client";
+import { comingSoonCategorySlugs } from "@/lib/config";
 import { prisma } from "@/lib/db";
 
 export type ProductImageDTO = {
@@ -133,7 +134,7 @@ function mapProduct(product: ProductWithCatalog): ProductCardDTO {
 
 const activeProductWhere = {
   isActive: true,
-  category: { isActive: true },
+  category: { isActive: true, slug: { notIn: [...comingSoonCategorySlugs] } },
   variants: { some: { isActive: true } },
   images: { some: {} },
 } satisfies Prisma.ProductWhereInput;

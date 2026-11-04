@@ -8,7 +8,7 @@ import { env } from "@/lib/env";
 import { calculateShipping } from "@/lib/money";
 import { cancelPendingOrderAndRestock } from "@/lib/orders";
 import { createOrderCheckoutSession, retrieveCheckoutSession } from "@/lib/payments/stripe";
-import { siteConfig } from "@/lib/config";
+import { isCategoryComingSoon, siteConfig } from "@/lib/config";
 import {
   checkoutInputSchema,
   checkoutQuoteSchema,
@@ -112,7 +112,10 @@ export async function getCheckoutQuoteAction(input: {
       }
 
       const unavailable =
-        !variant.isActive || !variant.product.isActive || !variant.product.category.isActive;
+        !variant.isActive ||
+        !variant.product.isActive ||
+        !variant.product.category.isActive ||
+        isCategoryComingSoon(variant.product.category.slug);
       const insufficient = variant.stock < line.quantity;
       const issue = unavailable
         ? "This item is no longer available."
@@ -390,7 +393,8 @@ export async function placeOrderAction(
           !variant ||
           !variant.isActive ||
           !variant.product.isActive ||
-          !variant.product.category.isActive
+          !variant.product.category.isActive ||
+          isCategoryComingSoon(variant.product.category.slug)
         ) {
           throw new CheckoutError("An item in your cart is no longer available.", "lines");
         }

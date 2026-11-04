@@ -50,11 +50,16 @@ export function MobileNav({ user }: { user: MobileNavUser | null }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-xl px-3 py-3 text-base font-medium text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground",
+                "flex items-center gap-2 rounded-xl px-3 py-3 text-base font-medium text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground",
                 pathname === item.href && "bg-white/5 text-foreground",
               )}
             >
               {item.label}
+              {item.comingSoon ? (
+                <span className="rounded-full border border-primary/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary/80">
+                  Soon
+                </span>
+              ) : null}
             </Link>
           ))}
           <Link

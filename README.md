@@ -27,6 +27,8 @@ The application covers the complete commerce loop: a persisted 21+ gate, catalog
 ### Admin console
 
 - Database-backed RBAC guard on every layout, page, and mutating server action.
+- Dedicated staff sign-in at `/admin/login`, separate from the customer login.
+- Global keyboard shortcut: `Ctrl+Shift+L` (`Cmd+Shift+L` on macOS) jumps to the admin console.
 - Revenue, order, product, and low-stock metrics using `Asia/Manila` date boundaries.
 - 30-day sales/order chart with an accessible textual summary.
 - Recent orders and a searchable, status-filterable order queue.
@@ -178,7 +180,7 @@ Do not enable demo data on a real store.
 npm run dev
 ```
 
-Open <http://localhost:3000>. Sign in with the seeded admin account and use the account menu or visit `/admin`.
+Open <http://localhost:3000>. Customers sign in at `/login`; staff sign in at `/admin/login` and manage the console at `/admin`.
 
 ## Environment variables
 
@@ -278,7 +280,7 @@ Card payment is available only when both Stripe variables are configured. A pend
 - Prisma records are mapped to explicit DTOs before reaching client components.
 - Security headers include CSP, `X-Frame-Options: DENY`, `nosniff`, referrer policy, and a restrictive permissions policy.
 - The age gate does not provide government-ID verification. Operational age checks and refusal-at-delivery policies remain the retailer’s responsibility.
-- Login and registration have a best-effort serverless rate limit. For production, add a platform WAF/rate-limit rule in front of `/login`, `/register`, and `/api/auth/*`; in-memory limits are not durable across serverless instances.
+- Login and registration have a best-effort serverless rate limit. For production, add a platform WAF/rate-limit rule in front of `/login`, `/admin/login`, `/register`, and `/api/auth/*`; in-memory limits are not durable across serverless instances.
 - Review the legal, tax, shipping, and payment obligations for nicotine products in the Philippines before launch. See [docs/operations.md](docs/operations.md).
 
 ## Deployment

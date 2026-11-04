@@ -3,7 +3,7 @@ export const siteConfig = {
   legalName: "Vapor District Trading",
   tagline: "Elevated vapor. Zero compromise.",
   description:
-    "A curated 21+ vape shop for premium e-liquids, pod systems, disposables, mods, and accessories. Adult signature required on delivery.",
+    "A curated 21+ vape shop for premium e-liquids, pod systems, and everyday essentials. Adult signature required on delivery.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   supportEmail: "support@vapordistrict.ph",
   supportPhone: "+63 917 555 0121",
@@ -23,12 +23,12 @@ export const siteConfig = {
 } as const;
 
 export const storefrontNav = [
-  { href: "/products", label: "Shop all" },
-  { href: "/products?category=nic-salts", label: "Nic Salts" },
-  { href: "/products?category=freebase", label: "Freebase" },
-  { href: "/products?category=pod-systems", label: "Pods" },
-  { href: "/products?category=disposables", label: "Disposables" },
-  { href: "/products?category=mods-tanks", label: "Mods & Tanks" },
+  { href: "/products", label: "Shop all", comingSoon: false },
+  { href: "/products?category=nic-salts", label: "Nic Salts", comingSoon: false },
+  { href: "/products?category=freebase", label: "Freebase", comingSoon: false },
+  { href: "/products?category=pod-systems", label: "Pods", comingSoon: false },
+  { href: "/products?category=disposables", label: "Disposables", comingSoon: true },
+  { href: "/products?category=mods-tanks", label: "Mods & Tanks", comingSoon: true },
 ] as const;
 
 export const categoryDefinitions = [
@@ -38,6 +38,7 @@ export const categoryDefinitions = [
     description: "Smooth, fast-acting salt nicotine blends for pod devices.",
     eyebrow: "E-Liquids",
     accent: "from-lime-300/20",
+    comingSoon: false,
   },
   {
     slug: "freebase",
@@ -45,6 +46,7 @@ export const categoryDefinitions = [
     description: "Classic freebase e-liquids built for flavour chasers.",
     eyebrow: "E-Liquids",
     accent: "from-cyan-300/20",
+    comingSoon: false,
   },
   {
     slug: "pod-systems",
@@ -52,6 +54,7 @@ export const categoryDefinitions = [
     description: "Pocketable, refillable systems with effortless draws.",
     eyebrow: "Hardware",
     accent: "from-violet-400/20",
+    comingSoon: false,
   },
   {
     slug: "disposables",
@@ -59,6 +62,7 @@ export const categoryDefinitions = [
     description: "Ready-to-vape devices with bold, consistent flavour.",
     eyebrow: "Hardware",
     accent: "from-fuchsia-400/20",
+    comingSoon: true,
   },
   {
     slug: "mods-tanks",
@@ -66,6 +70,7 @@ export const categoryDefinitions = [
     description: "High-performance box mods, rebuildables, and tanks.",
     eyebrow: "Hardware",
     accent: "from-orange-300/20",
+    comingSoon: true,
   },
   {
     slug: "coils-accessories",
@@ -73,8 +78,23 @@ export const categoryDefinitions = [
     description: "Replacement coils, pods, tools, and everyday essentials.",
     eyebrow: "Essentials",
     accent: "from-emerald-300/20",
+    comingSoon: false,
   },
 ] as const;
+
+export type CategoryDefinition = (typeof categoryDefinitions)[number];
+
+export const comingSoonCategorySlugs = categoryDefinitions
+  .filter((category) => category.comingSoon)
+  .map((category) => category.slug);
+
+export const availableCategoryDefinitions = categoryDefinitions.filter(
+  (category) => !category.comingSoon,
+);
+
+export function isCategoryComingSoon(slug: string) {
+  return categoryDefinitions.some((category) => category.slug === slug && category.comingSoon);
+}
 
 export const flavorProfiles = [
   { value: "FRUITY", label: "Fruity" },

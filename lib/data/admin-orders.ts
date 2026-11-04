@@ -6,6 +6,8 @@ import { orderStatuses, siteConfig } from "@/lib/config";
 
 export type AdminOrderStatus = (typeof orderStatuses)[number];
 
+export type AdminOrderAttentionReason = "PROOF" | "AGING";
+
 export type AdminOrderSummaryDTO = {
   id: string;
   orderNumber: string;
@@ -13,10 +15,15 @@ export type AdminOrderSummaryDTO = {
   contactEmail: string;
   status: AdminOrderStatus;
   paymentMethod: "COD" | "GCASH" | "CARD";
+  paymentReference: string | null;
+  hasPaymentProof: boolean;
+  attentionReason: AdminOrderAttentionReason | null;
   totalCentavos: number;
   itemCount: number;
   createdAt: string;
 };
+
+export type AdminOrderStatusCounts = Record<AdminOrderStatus, number> & { ALL: number };
 
 export type AdminOrderListResult = {
   orders: AdminOrderSummaryDTO[];
@@ -26,6 +33,8 @@ export type AdminOrderListResult = {
   pageSize: number;
   search: string;
   status: AdminOrderStatus | "ALL";
+  statusCounts: AdminOrderStatusCounts;
+  attentionCount: number;
 };
 
 export type AdminOrderDetailDTO = {
@@ -104,21 +113,40 @@ export async function getAdminOrderList({
   const normalizedStatus = normalizeStatus(status);
   const pageSize = siteConfig.pageSize;
   const requestedPage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const attentionCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const searchWhere: Prisma.OrderWhereInput = normalizedSearch
+    ? {
+        OR: [
+          { orderNumber: { contains: normalizedSearch, mode: "insensitive" } },
+          { contactName: { contains: normalizedSearch, mode: "insensitive" } },
+          { contactEmail: { contains: normalizedSearch, mode: "insensitive" } },
+        ],
+      }
+    : {};
 
   const where: Prisma.OrderWhereInput = {
+    ...searchWhere,
     ...(normalizedStatus === "ALL" ? {} : { status: normalizedStatus }),
-    ...(normalizedSearch
-      ? {
-          OR: [
-            { orderNumber: { contains: normalizedSearch, mode: "insensitive" } },
-            { contactName: { contains: normalizedSearch, mode: "insensitive" } },
-            { contactEmail: { contains: normalizedSearch, mode: "insensitive" } },
-          ],
-        }
-      : {}),
   };
 
-  const [orders, total] = await Promise.all([
+  const attentionWhere: Prisma.OrderWhereInput = {
+    AND: [
+      searchWhere,
+      {
+        status: "PENDING",
+        OR: [
+          {
+            paymentMethod: "GCASH",
+            OR: [{ paymentReference: null }, { paymentProofId: null }],
+          },
+          { createdAt: { lt: attentionCutoff } },
+        ],
+      },
+    ],
+  };
+
+  const [orders, total, statusGroups, attentionCount] = await Promise.all([
     prisma.order.findMany({
       where,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -131,34 +159,67 @@ export async function getAdminOrderList({
         contactEmail: true,
         status: true,
         paymentMethod: true,
+        paymentReference: true,
+        paymentProofId: true,
         totalCentavos: true,
         createdAt: true,
         items: { select: { quantity: true } },
       },
     }),
     prisma.order.count({ where }),
+    prisma.order.groupBy({
+      by: ["status"],
+      where: searchWhere,
+      _count: { _all: true },
+    }),
+    prisma.order.count({ where: attentionWhere }),
   ]);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
+  const statusCounts: AdminOrderStatusCounts = {
+    ALL: 0,
+    PENDING: 0,
+    PAID: 0,
+    SHIPPED: 0,
+    DELIVERED: 0,
+    CANCELLED: 0,
+  };
+  for (const group of statusGroups) {
+    statusCounts[group.status] = group._count._all;
+    statusCounts.ALL += group._count._all;
+  }
+
   return {
-    orders: orders.map((order) => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      contactName: order.contactName,
-      contactEmail: order.contactEmail,
-      status: order.status,
-      paymentMethod: order.paymentMethod,
-      totalCentavos: order.totalCentavos,
-      itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
-      createdAt: order.createdAt.toISOString(),
-    })),
+    orders: orders.map((order) => {
+      const proofMissing =
+        order.status === "PENDING" &&
+        order.paymentMethod === "GCASH" &&
+        (!order.paymentReference || !order.paymentProofId);
+      const aging = order.status === "PENDING" && order.createdAt < attentionCutoff;
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        contactName: order.contactName,
+        contactEmail: order.contactEmail,
+        status: order.status,
+        paymentMethod: order.paymentMethod,
+        paymentReference: order.paymentReference,
+        hasPaymentProof: Boolean(order.paymentProofId),
+        attentionReason: proofMissing ? "PROOF" : aging ? "AGING" : null,
+        totalCentavos: order.totalCentavos,
+        itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+        createdAt: order.createdAt.toISOString(),
+      };
+    }),
     total,
     page: requestedPage,
     pageCount,
     pageSize,
     search: normalizedSearch,
     status: normalizedStatus,
+    statusCounts,
+    attentionCount,
   };
 }
 

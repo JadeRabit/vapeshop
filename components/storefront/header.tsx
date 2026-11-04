@@ -30,9 +30,14 @@ export async function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
             >
               {item.label}
+              {item.comingSoon ? (
+                <span className="rounded-full border border-primary/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary/80">
+                  Soon
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>

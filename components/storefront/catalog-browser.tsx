@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ProductCard } from "@/components/storefront/product-card";
 import type { ProductCardDTO } from "@/lib/data/catalog";
-import { categoryDefinitions, flavorProfiles } from "@/lib/config";
+import { availableCategoryDefinitions, flavorProfiles } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 const PRICE_RANGES = [
@@ -102,7 +102,7 @@ function FilterPanel({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {categoryDefinitions.map((category) => (
+            {availableCategoryDefinitions.map((category) => (
               <SelectItem key={category.slug} value={category.slug}>
                 {category.name}
               </SelectItem>
@@ -223,7 +223,7 @@ export function CatalogBrowser({
   const [search, setSearch] = useState(initialSearch ?? "");
   const [filters, setFilters] = useState<Filters>({
     ...EMPTY_FILTERS,
-    category: initialCategory && categoryDefinitions.some((item) => item.slug === initialCategory)
+    category: initialCategory && availableCategoryDefinitions.some((item) => item.slug === initialCategory)
       ? initialCategory
       : "all",
   });
@@ -301,7 +301,7 @@ export function CatalogBrowser({
     setFilters(EMPTY_FILTERS);
   }
 
-  const activeCategory = categoryDefinitions.find((item) => item.slug === filters.category);
+  const activeCategory = availableCategoryDefinitions.find((item) => item.slug === filters.category);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">

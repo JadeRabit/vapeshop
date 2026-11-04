@@ -78,6 +78,85 @@ export async function loginAction(
   return { ok: true, message: "Signed in.", redirectTo };
 }
 
+export async function adminLoginAction(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: "Check the highlighted fields and try again.",
+      fieldErrors: fieldErrorsFrom(parsed.error),
+    };
+  }
+
+  const limit = checkAuthRateLimit(`admin-login:${parsed.data.email}`);
+  if (!limit.allowed) {
+    return {
+      ok: false,
+      message: `Too many administrator sign-in attempts. Try again in ${Math.ceil(
+        (limit.retryAfterSeconds ?? 60) / 60,
+      )} minute(s).`,
+    };
+  }
+
+  const requested = safeCallbackUrl(
+    typeof formData.get("callbackUrl") === "string"
+      ? (formData.get("callbackUrl") as string)
+      : null,
+    "/admin",
+  );
+  const isAdminPath = requested === "/admin" || requested.startsWith("/admin/");
+  const redirectTo =
+    isAdminPath && !requested.startsWith("/admin/login") ? requested : "/admin";
+
+  const account = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+    select: { role: true, passwordHash: true },
+  });
+
+  if (!account?.passwordHash) {
+    return { ok: false, message: INVALID_CREDENTIALS };
+  }
+
+  const validPassword = await bcrypt.compare(parsed.data.password, account.passwordHash);
+  if (!validPassword) {
+    return { ok: false, message: INVALID_CREDENTIALS };
+  }
+
+  if (account.role !== "ADMIN") {
+    return {
+      ok: false,
+      message: "This account does not have administrator access.",
+    };
+  }
+
+  try {
+    await signIn("credentials", {
+      email: parsed.data.email,
+      password: parsed.data.password,
+      redirect: false,
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return { ok: false, message: INVALID_CREDENTIALS };
+    }
+    console.error("Unexpected admin sign-in failure", error);
+    return {
+      ok: false,
+      message: "We could not sign you in right now. Please try again.",
+    };
+  }
+
+  clearAuthRateLimit(`admin-login:${parsed.data.email}`);
+  return { ok: true, message: "Administrator access granted.", redirectTo };
+}
+
 export async function registerAction(
   _previous: ActionState,
   formData: FormData,

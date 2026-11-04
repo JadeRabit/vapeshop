@@ -46,7 +46,6 @@ export const test = base.extend({
         name: siteConfig.ageCookieName,
         value: cookieValue,
         url: new URL(baseURL ?? "http://localhost:3000").origin,
-        path: "/",
         sameSite: "Lax",
         expires: Math.floor((now + AGE_COOKIE_MAX_AGE_SECONDS * 1000) / 1000),
       },
@@ -88,6 +87,26 @@ export async function login(
   await Promise.all([
     page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 }),
     page.getByRole("button", { name: "Sign in", exact: true }).click(),
+  ]);
+}
+
+export async function adminLogin(
+  page: Page,
+  credentials: { email: string; password: string },
+  callbackUrl = "/admin",
+) {
+  await page.goto(`/admin/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  await expect(page.getByRole("heading", { name: "Administrator access." })).toBeVisible();
+
+  await page.getByLabel("Email address").fill(credentials.email);
+  await page.getByLabel("Password", { exact: true }).fill(credentials.password);
+
+  await Promise.all([
+    page.waitForURL(
+      (url) => url.pathname.startsWith("/admin") && url.pathname !== "/admin/login",
+      { timeout: 30_000 },
+    ),
+    page.getByRole("button", { name: "Enter admin console", exact: true }).click(),
   ]);
 }
 

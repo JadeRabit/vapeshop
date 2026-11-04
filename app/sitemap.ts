@@ -1,5 +1,9 @@
 import type { MetadataRoute } from "next";
-import { siteConfig, categoryDefinitions } from "@/lib/config";
+import {
+  availableCategoryDefinitions,
+  comingSoonCategorySlugs,
+  siteConfig,
+} from "@/lib/config";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/cart`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
   ];
 
-  const categoryRoutes: MetadataRoute.Sitemap = categoryDefinitions.map((category) => ({
+  const categoryRoutes: MetadataRoute.Sitemap = availableCategoryDefinitions.map((category) => ({
     url: `${base}/products?category=${category.slug}`,
     lastModified: now,
     changeFrequency: "weekly",
@@ -24,7 +28,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productRoutes: MetadataRoute.Sitemap = [];
   try {
     const products = await prisma.product.findMany({
-      where: { isActive: true, category: { isActive: true }, variants: { some: { isActive: true } } },
+      where: {
+        isActive: true,
+        category: { isActive: true, slug: { notIn: [...comingSoonCategorySlugs] } },
+        variants: { some: { isActive: true } },
+      },
       select: { slug: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
       take: 500,

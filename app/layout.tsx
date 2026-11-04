@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
+import { AdminShortcut } from "@/components/shared/admin-shortcut";
 import { siteConfig } from "@/lib/config";
 import "./globals.css";
 
@@ -66,6 +67,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="min-h-dvh bg-background text-foreground antialiased">
+        <AdminShortcut />
         {children}
         <Toaster
           theme="dark"

@@ -1,5 +1,6 @@
 import {
   adminCredentials,
+  adminLogin,
   customerCredentials,
   expect,
   hasAdminCredentials,
@@ -9,10 +10,11 @@ import {
 } from "./fixtures";
 
 test.describe("admin access control", () => {
-  test("anonymous visitors are redirected to login with a callback", async ({ page }) => {
+  test("anonymous visitors are redirected to the admin login with a callback", async ({ page }) => {
     await page.goto("/admin");
-    await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fadmin/);
-    await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/login\?callbackUrl=%2Fadmin/);
+    await expect(page.getByRole("heading", { name: "Administrator access." })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Use storefront sign in" })).toBeVisible();
   });
 
   test("signed-in customers cannot enter the admin console", async ({ page }) => {
@@ -28,7 +30,7 @@ test.describe("admin access control", () => {
   test("administrators can reach the dashboard", async ({ page }) => {
     test.skip(!hasAdminCredentials(), "Set E2E_ADMIN_EMAIL/PASSWORD or seed admin credentials.");
 
-    await login(page, adminCredentials, "/admin");
+    await adminLogin(page, adminCredentials, "/admin");
 
     await expect(page).toHaveURL(/\/admin$/);
     await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();

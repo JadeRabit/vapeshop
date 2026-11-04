@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { CategoryCard } from "@/components/storefront/category-card";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getFeaturedProducts } from "@/lib/data/catalog";
 import { categoryDefinitions, promoMessages, siteConfig } from "@/lib/config";
@@ -46,7 +47,7 @@ export default async function HomePage() {
               <span className="text-gradient block">Zero compromise.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-              A tightly curated shelf of nic salts, freebase, pods, disposables, and hardware.
+              A tightly curated shelf of nic salts, freebase, pods, and everyday essentials.
               Authenticated products, transparent stock, and checkout built for the Philippines.
             </p>
 
@@ -89,8 +90,8 @@ export default async function HomePage() {
             <div className="absolute -inset-10 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
             <div className="vapor-glow relative overflow-hidden rounded-[2rem] border border-white/12 bg-card">
               <Image
-                src="/products/disposables.svg"
-                alt="Neon disposable vape product artwork"
+                src="/products/pod-systems.svg"
+                alt="Aurora pod system product artwork"
                 width={800}
                 height={800}
                 priority
@@ -100,8 +101,8 @@ export default async function HomePage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
                   House pick
                 </p>
-                <p className="mt-1 font-display text-2xl font-semibold">Neon Blast 5K</p>
-                <p className="mt-1 text-sm text-muted-foreground">Lychee menthol · 5,000 puffs</p>
+                <p className="mt-1 font-display text-2xl font-semibold">Aurora Pod Kit</p>
+                <p className="mt-1 text-sm text-muted-foreground">900mAh refillable pod system</p>
               </div>
             </div>
             <div className="absolute -left-8 top-8 rounded-2xl border border-white/12 bg-popover/95 px-4 py-3 shadow-2xl backdrop-blur">
@@ -150,42 +151,7 @@ export default async function HomePage() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {categoryDefinitions.map((category, index) => (
-            <Link
-              key={category.slug}
-              href={`/products?category=${category.slug}`}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-card p-5 transition-colors hover:border-primary/35"
-            >
-              <div
-                className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${category.accent} via-transparent to-transparent opacity-70`}
-                aria-hidden="true"
-              />
-              <div className="relative flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                    {category.eyebrow}
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold">{category.name}</h3>
-                  <p className="mt-2 max-w-[26ch] text-sm leading-6 text-muted-foreground">
-                    {category.description}
-                  </p>
-                </div>
-                <span className="relative size-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#0d0d16]">
-                  <Image
-                    src={`/products/${category.slug}.svg`}
-                    alt=""
-                    fill
-                    sizes="80px"
-                    className="object-cover opacity-80 transition-transform duration-500 group-hover:scale-110"
-                  />
-                </span>
-              </div>
-              <p className="relative mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-                Browse category <ArrowRight className="size-3.5" aria-hidden="true" />
-              </p>
-              <span className="absolute right-4 bottom-4 text-5xl font-bold text-white/[0.035]">
-                0{index + 1}
-              </span>
-            </Link>
+            <CategoryCard key={category.slug} category={category} index={index} />
           ))}
         </div>
       </section>

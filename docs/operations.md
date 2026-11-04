@@ -21,7 +21,7 @@ Run this on a production-like preview first, then repeat the read-only checks im
 
 ### Authentication and checkout
 
-- [ ] `/admin`, `/account`, and `/checkout` redirect anonymous visitors to `/login` with a safe callback.
+- [ ] `/admin` redirects anonymous visitors to `/admin/login` with a safe callback; `/account` and `/checkout` redirect to `/login`.
 - [ ] A customer can register, sign in, and sign out.
 - [ ] A customer cannot open `/admin` or invoke admin actions.
 - [ ] COD checkout: select/add an address, review the server quote, place the order, and see the confirmation page with the cart cleared.

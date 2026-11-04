@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AtSign, Mail, MapPin, Phone, Sparkles } from "lucide-react";
-import { categoryDefinitions, siteConfig, storefrontNav } from "@/lib/config";
+import { availableCategoryDefinitions, siteConfig, storefrontNav } from "@/lib/config";
 
 export function SiteFooter() {
   return (
@@ -27,8 +27,16 @@ export function SiteFooter() {
             <ul className="space-y-2.5 text-sm">
               {storefrontNav.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} className="text-muted-foreground hover:text-primary">
+                  <Link
+                    href={item.href}
+                    className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary"
+                  >
                     {item.label}
+                    {item.comingSoon ? (
+                      <span className="rounded-full border border-primary/25 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary/70">
+                        Soon
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               ))}
@@ -112,7 +120,8 @@ export function SiteFooter() {
             © {new Date().getFullYear()} {siteConfig.legalName}. All rights reserved.
           </p>
           <p>
-            {categoryDefinitions.length} curated categories · PHP pricing · Philippines only
+            {availableCategoryDefinitions.length} curated categories live · PHP pricing · Philippines
+            only
           </p>
         </div>
       </div>

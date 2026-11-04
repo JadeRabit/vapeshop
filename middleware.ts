@@ -8,9 +8,18 @@ export default auth((request) => {
   const pathname = request.nextUrl.pathname;
   const isAuthed = Boolean(request.auth?.user);
   const role = request.auth?.user?.role;
+  const isAdminLogin = pathname === "/admin/login";
+
+  if (isAdminLogin) {
+    if (isAuthed && role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin", request.nextUrl.origin));
+    }
+    return NextResponse.next();
+  }
 
   if (!isAuthed) {
-    const loginUrl = new URL("/login", request.nextUrl.origin);
+    const loginPath = pathname.startsWith("/admin") ? "/admin/login" : "/login";
+    const loginUrl = new URL(loginPath, request.nextUrl.origin);
     loginUrl.searchParams.set("callbackUrl", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
   }

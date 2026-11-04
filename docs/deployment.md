@@ -205,7 +205,7 @@ The seed:
 - Resets that admin's password to `SEED_ADMIN_PASSWORD` on every run.
 - Skips demo data unless `SEED_DEMO_DATA=true`.
 
-After seeding, sign in at `/login` and verify the `/admin` dashboard. Do not leave seed credentials in a shared shell history or CI log. Rotate the admin password by rerunning the seed with a new value, or update the bcrypt hash through a controlled script.
+After seeding, sign in at `/admin/login` and verify the `/admin` dashboard. Do not leave seed credentials in a shared shell history or CI log. Rotate the admin password by rerunning the seed with a new value, or update the bcrypt hash through a controlled script.
 
 ## 7. Health and observability
 

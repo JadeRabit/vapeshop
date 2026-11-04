@@ -56,7 +56,7 @@ export async function requirePageAdmin() {
     return await requireAdmin();
   } catch (error) {
     if (error instanceof AuthorizationError) {
-      redirect(error.status === 403 ? "/?error=forbidden" : "/login?callbackUrl=/admin");
+      redirect(error.status === 403 ? "/?error=forbidden" : "/admin/login");
     }
     throw error;
   }

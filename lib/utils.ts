@@ -22,6 +22,40 @@ export function formatDateTime(date: Date | string) {
   });
 }
 
+export function formatLongDate(date: Date | string) {
+  const value = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("en-PH", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Manila",
+  }).format(value);
+}
+
+export function formatRelativeTime(date: Date | string) {
+  const value = typeof date === "string" ? new Date(date) : date;
+  const seconds = Math.round((value.getTime() - Date.now()) / 1000);
+  const formatter = new Intl.RelativeTimeFormat("en-PH", { numeric: "auto" });
+  const ranges: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+    ["year", 60 * 60 * 24 * 365],
+    ["month", 60 * 60 * 24 * 30],
+    ["week", 60 * 60 * 24 * 7],
+    ["day", 60 * 60 * 24],
+    ["hour", 60 * 60],
+    ["minute", 60],
+    ["second", 1],
+  ];
+
+  for (const [unit, unitSeconds] of ranges) {
+    if (Math.abs(seconds) >= unitSeconds || unit === "second") {
+      return formatter.format(Math.round(seconds / unitSeconds), unit);
+    }
+  }
+
+  return formatter.format(seconds, "second");
+}
+
 export function slugify(input: string) {
   return input
     .toLowerCase()

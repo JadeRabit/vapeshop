@@ -3,14 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   ExternalLink,
   LayoutDashboard,
+  LogOut,
   Menu,
   Package,
   ShoppingBag,
   Sparkles,
+  Star,
   Store,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,20 +25,56 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { RefreshButton } from "@/components/admin/refresh-button";
 import { signOutAction } from "@/lib/actions/auth";
 import { getInitials } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-const adminNav = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
-] as const;
+type AdminNavBadge = "pending" | "lowStock";
+
+type AdminNavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  badge?: AdminNavBadge;
+};
+
+type AdminNavGroup = {
+  label: string;
+  items: AdminNavItem[];
+};
+
+const adminNavGroups: AdminNavGroup[] = [
+  {
+    label: "Operations",
+    items: [
+      { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+      { href: "/admin/orders", label: "Orders", icon: ShoppingBag, badge: "pending" },
+      { href: "/admin/customers", label: "Customers", icon: Users },
+    ],
+  },
+  {
+    label: "Catalogue",
+    items: [
+      { href: "/admin/products", label: "Products", icon: Package, badge: "lowStock" },
+      { href: "/admin/reviews", label: "Reviews", icon: Star },
+    ],
+  },
+];
 
 const segmentLabels: Record<string, string> = {
   admin: "Overview",
   products: "Products",
   orders: "Orders",
+  customers: "Customers",
+  reviews: "Reviews",
+};
+
+export type AdminShellBadges = {
+  pendingOrders: number;
+  lowStock: number;
+  needsAttention: number;
 };
 
 type AdminShellUser = {
@@ -42,39 +82,77 @@ type AdminShellUser = {
   email: string;
 };
 
+function NavBadge({
+  kind,
+  count,
+}: {
+  kind: AdminNavBadge;
+  count: number;
+}) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={cn(
+        "ml-auto inline-flex min-w-5 items-center justify-center rounded-full border px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+        kind === "lowStock"
+          ? "border-amber-300/25 bg-amber-300/10 text-amber-200"
+          : "border-primary/25 bg-primary/10 text-primary",
+      )}
+      aria-label={kind === "lowStock" ? `${count} low stock` : `${count} pending`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 function NavLinks({
   pathname,
+  badges,
   onNavigate,
 }: {
   pathname: string;
+  badges: AdminShellBadges;
   onNavigate?: () => void;
 }) {
   return (
-    <nav aria-label="Admin" className="flex flex-col gap-1">
-      {adminNav.map((item) => {
-        const active =
-          "exact" in item && item.exact
-            ? pathname === item.href
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors",
-              active
-                ? "border-primary/30 bg-primary/[0.07] text-primary"
-                : "border-transparent text-muted-foreground hover:border-white/10 hover:bg-white/[0.04] hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4" aria-hidden="true" />
-            {item.label}
-          </Link>
-        );
-      })}
+    <nav aria-label="Admin" className="flex flex-col gap-5">
+      {adminNavGroups.map((group) => (
+        <div key={group.label} className="space-y-1">
+          <p className="px-3.5 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
+            {group.label}
+          </p>
+          {group.items.map((item) => {
+            const active = item.exact
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const Icon = item.icon;
+            const badgeCount =
+              item.badge === "pending"
+                ? badges.pendingOrders
+                : item.badge === "lowStock"
+                  ? badges.lowStock
+                  : 0;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-colors",
+                  active
+                    ? "border-primary/30 bg-primary/[0.07] text-primary"
+                    : "border-transparent text-muted-foreground hover:border-white/10 hover:bg-white/[0.04] hover:text-foreground",
+                )}
+              >
+                <Icon className="size-4" aria-hidden="true" />
+                {item.label}
+                {item.badge ? <NavBadge kind={item.badge} count={badgeCount} /> : null}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
     </nav>
   );
 }
@@ -82,16 +160,18 @@ function NavLinks({
 function SidebarContent({
   pathname,
   user,
+  badges,
   onNavigate,
 }: {
   pathname: string;
   user: AdminShellUser;
+  badges: AdminShellBadges;
   onNavigate?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col gap-6">
       <Link href="/admin" className="flex items-center gap-2.5" onClick={onNavigate}>
-        <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+        <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_24px_rgba(196,255,77,.2)]">
           <Sparkles className="size-4" aria-hidden="true" />
         </span>
         <span>
@@ -102,7 +182,23 @@ function SidebarContent({
         </span>
       </Link>
 
-      <NavLinks pathname={pathname} onNavigate={onNavigate} />
+      <NavLinks pathname={pathname} badges={badges} onNavigate={onNavigate} />
+
+      {badges.needsAttention > 0 ? (
+        <Link
+          href="/admin/orders?status=PENDING"
+          onClick={onNavigate}
+          className="rounded-xl border border-amber-300/20 bg-amber-300/[0.05] p-3 text-xs leading-5 text-amber-100 transition-colors hover:border-amber-300/35"
+        >
+          <span className="flex items-center gap-1.5 font-semibold">
+            <span className="size-1.5 rounded-full bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,.8)]" />
+            {badges.needsAttention} order{badges.needsAttention === 1 ? "" : "s"} need attention
+          </span>
+          <span className="mt-0.5 block text-[11px] text-amber-200/70">
+            Missing GCash proof or waiting over 24 hours.
+          </span>
+        </Link>
+      ) : null}
 
       <div className="mt-auto space-y-3 border-t border-white/10 pt-4">
         <Link
@@ -123,13 +219,15 @@ function SidebarContent({
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{user.name ?? "Administrator"}</p>
-            <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+            <p className="truncate text-[11px] text-muted-foreground" title={user.email}>
+              {user.email}
+            </p>
           </div>
         </div>
 
         <form action={signOutAction}>
           <Button type="submit" variant="outline" className="w-full justify-start">
-            Sign out
+            <LogOut aria-hidden="true" /> Sign out
           </Button>
         </form>
       </div>
@@ -144,7 +242,11 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 
   for (const [index, segment] of segments.entries()) {
     accumulated += `/${segment}`;
-    const label = segmentLabels[segment] ?? decodeURIComponent(segment);
+    const previous = segments[index - 1];
+    const label =
+      previous === "orders" && segment !== "orders"
+        ? `Order ${decodeURIComponent(segment)}`
+        : segmentLabels[segment] ?? decodeURIComponent(segment);
     if (index === 0) {
       trail.push({ href: "/admin", label: "Overview" });
       if (segments.length === 1) break;
@@ -180,29 +282,38 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 
 export function AdminShell({
   user,
+  badges,
   children,
 }: {
   user: AdminShellUser;
+  badges: AdminShellBadges;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="sticky top-0 hidden h-dvh border-r border-white/10 bg-card p-5 lg:flex">
-        <SidebarContent pathname={pathname} user={user} />
+    <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[260px_1fr]">
+      <a
+        href="#admin-main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
+
+      <aside className="sticky top-0 hidden h-dvh border-r border-white/10 bg-[#0a0a11] p-5 lg:flex">
+        <SidebarContent pathname={pathname} user={user} badges={badges} />
       </aside>
 
       <div className="flex min-h-dvh min-w-0 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/10 bg-background/85 px-4 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/10 bg-background/85 px-4 backdrop-blur-xl sm:px-6">
           <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open admin menu">
                 <Menu aria-hidden="true" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[280px]">
+            <SheetContent side="left" className="w-[290px] bg-[#0a0a11] p-5">
               <SheetHeader className="sr-only">
                 <SheetTitle>Admin menu</SheetTitle>
                 <SheetDescription>Navigate the admin console.</SheetDescription>
@@ -210,6 +321,7 @@ export function AdminShell({
               <SidebarContent
                 pathname={pathname}
                 user={user}
+                badges={badges}
                 onNavigate={() => setMobileNavOpen(false)}
               />
             </SheetContent>
@@ -217,14 +329,19 @@ export function AdminShell({
 
           <Breadcrumbs pathname={pathname} />
 
-          <Button asChild variant="ghost" size="sm" className="ml-auto hidden sm:inline-flex">
-            <Link href="/" target="_blank" rel="noreferrer">
-              Storefront <ExternalLink aria-hidden="true" />
-            </Link>
-          </Button>
+          <div className="ml-auto flex items-center gap-1">
+            <RefreshButton />
+            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+              <Link href="/" target="_blank" rel="noreferrer">
+                Storefront <ExternalLink aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main id="admin-main" className="flex-1 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );
