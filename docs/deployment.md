@@ -38,6 +38,8 @@ Supabase is the recommended provider. The application uses the standard Prisma P
 5. Co-locate compute and data when the Vercel plan allows region selection: choose the same region for the Vercel functions and the Supabase project (for example `sin1` in Singapore for Philippine traffic).
 6. Optionally create a separate Supabase project/database for preview deployments. Do not point previews at production.
 
+> Free Supabase projects pause after a period of inactivity. For a production store, use a paid plan or configure a lightweight scheduled keep-alive that performs a database query (for example `SELECT 1`).
+
 Expected connection string shapes:
 
 ```dotenv
