@@ -20,6 +20,7 @@ export type ProductVariantDTO = {
   priceCentavos: number;
   stock: number;
   lowStockThreshold: number;
+  isPreOrder: boolean;
   isActive: boolean;
   imageUrl: string | null;
   imageAlt: string | null;
@@ -38,6 +39,7 @@ export type ProductCardDTO = {
   lowestPriceCentavos: number;
   totalStock: number;
   inStock: boolean;
+  hasPreOrder: boolean;
 };
 
 export type ProductDetailDTO = ProductCardDTO & {
@@ -69,6 +71,7 @@ const productInclude = {
       priceCentavos: true,
       stock: true,
       lowStockThreshold: true,
+      isPreOrder: true,
       isActive: true,
       sortOrder: true,
     },
@@ -107,6 +110,7 @@ function mapProduct(product: ProductWithCatalog): ProductCardDTO {
       priceCentavos: variant.priceCentavos,
       stock: variant.stock,
       lowStockThreshold: variant.lowStockThreshold,
+      isPreOrder: variant.isPreOrder,
       isActive: variant.isActive,
       imageUrl: variantImage?.url ?? null,
       imageAlt: variantImage?.alt ?? null,
@@ -129,6 +133,7 @@ function mapProduct(product: ProductWithCatalog): ProductCardDTO {
     lowestPriceCentavos: prices.length ? Math.min(...prices) : 0,
     totalStock,
     inStock: variants.some((variant) => variant.stock > 0),
+    hasPreOrder: variants.some((variant) => variant.isPreOrder),
   };
 }
 

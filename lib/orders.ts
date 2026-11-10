@@ -21,7 +21,9 @@ export async function cancelPendingOrderAndRestock({
     return await prisma.$transaction(async (transaction) => {
       const order = await transaction.order.findUnique({
         where: { id: orderId },
-        include: { items: { select: { variantId: true, quantity: true } } },
+        include: {
+          items: { select: { variantId: true, quantity: true, isPreOrder: true } },
+        },
       });
 
       if (!order || order.status !== "PENDING") return false;
@@ -38,6 +40,7 @@ export async function cancelPendingOrderAndRestock({
       if (updated.count !== 1) return false;
 
       for (const item of order.items) {
+        if (item.isPreOrder) continue;
         await transaction.productVariant.update({
           where: { id: item.variantId },
           data: { stock: { increment: item.quantity } },

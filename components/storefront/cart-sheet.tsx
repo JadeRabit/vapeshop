@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -18,6 +19,7 @@ import { QuantityStepper } from "@/components/shared/quantity-stepper";
 import { formatPhp } from "@/lib/money";
 import { siteConfig } from "@/lib/config";
 import {
+  MAX_LINE_QUANTITY,
   getLineWarning,
   selectCartCount,
   selectCartSubtotal,
@@ -36,6 +38,7 @@ export function CartSheet({
   const lines = useCartStore((state) => state.lines);
   const increment = useCartStore((state) => state.increment);
   const decrement = useCartStore((state) => state.decrement);
+  const setQuantity = useCartStore((state) => state.setQuantity);
   const removeLine = useCartStore((state) => state.removeLine);
   const count = useCartStore(selectCartCount);
   const subtotal = useCartStore(selectCartSubtotal);
@@ -45,7 +48,9 @@ export function CartSheet({
       ? 0
       : siteConfig.shippingFlatCentavos
     : 0;
-  const blocked = lines.some((line) => line.stock <= 0 || line.quantity > line.stock);
+  const blocked = lines.some(
+    (line) => !line.isPreOrder && (line.stock <= 0 || line.quantity > line.stock),
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -124,7 +129,10 @@ export function CartSheet({
                           >
                             {line.productName}
                           </Link>
-                          <p className="truncate text-xs text-muted-foreground">{line.variantLabel}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 truncate text-xs text-muted-foreground">
+                            {line.variantLabel}
+                            {line.isPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
+                          </div>
                         </div>
                         <Button
                           type="button"
@@ -141,9 +149,10 @@ export function CartSheet({
                         <QuantityStepper
                           value={line.quantity}
                           min={1}
-                          max={Math.max(line.stock, 1)}
+                          max={line.isPreOrder ? MAX_LINE_QUANTITY : Math.max(line.stock, 1)}
                           onDecrease={() => decrement(line.variantId)}
                           onIncrease={() => increment(line.variantId)}
+                          onChange={(quantity) => setQuantity(line.variantId, quantity)}
                           label={`${line.productName} quantity`}
                         />
                         <span className="text-sm font-semibold tabular-nums">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, PackageOpen } from "lucide-react";
 import { requirePageUser } from "@/lib/auth-guards";
 import { getOrderSummaries } from "@/lib/data/account";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { OrderStatusBadge, PaymentMethodBadge } from "@/components/shared/order-status-badge";
@@ -65,6 +66,7 @@ export default async function AccountOrdersPage() {
                       <p className="font-display text-base font-semibold">{order.orderNumber}</p>
                       <OrderStatusBadge status={order.status} />
                       <PaymentMethodBadge paymentMethod={order.paymentMethod} />
+                      {order.hasPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Placed {formatDateTime(order.createdAt)} · {order.itemCount}{" "}

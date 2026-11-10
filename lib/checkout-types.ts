@@ -8,6 +8,7 @@ export type CheckoutQuoteLine = {
   quantity: number;
   lineTotalCentavos: number;
   stock: number;
+  isPreOrder: boolean;
   imageUrl: string | null;
   imageAlt: string;
   issue: string | null;

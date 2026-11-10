@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowRight, DoorOpen, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight, DoorOpen, ShieldCheck } from "lucide-react";
+import { SiteLogo } from "@/components/shared/site-logo";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/lib/config";
 import {
@@ -121,9 +122,7 @@ export function AgeGate({ initiallyVerified }: { initiallyVerified: boolean }) {
         <div className="relative space-y-6 p-6 sm:p-8">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2.5">
-              <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
-                <Sparkles className="size-5" aria-hidden="true" />
-              </span>
+              <SiteLogo className="size-10" />
               <span className="font-display text-base font-semibold tracking-tight">
                 {siteConfig.name}
               </span>

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { SiteLogo } from "@/components/shared/site-logo";
 import { siteConfig } from "@/lib/config";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -14,9 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="relative mx-auto grid min-h-dvh w-full max-w-7xl lg:grid-cols-[1.05fr_1fr]">
         <aside className="hidden flex-col justify-between border-r border-white/10 p-10 lg:flex xl:p-14">
           <Link href="/" className="inline-flex w-fit items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <Sparkles className="size-5" aria-hidden="true" />
-            </span>
+            <SiteLogo className="size-10" />
             <span className="font-display text-lg font-semibold tracking-tight">{siteConfig.name}</span>
           </Link>
 

@@ -105,6 +105,7 @@ export async function getCheckoutQuoteAction(input: {
           quantity: line.quantity,
           lineTotalCentavos: 0,
           stock: 0,
+          isPreOrder: false,
           imageUrl: null,
           imageAlt: "",
           issue: "This item is no longer available.",
@@ -116,7 +117,8 @@ export async function getCheckoutQuoteAction(input: {
         !variant.product.isActive ||
         !variant.product.category.isActive ||
         isCategoryComingSoon(variant.product.category.slug);
-      const insufficient = variant.stock < line.quantity;
+      const isPreOrder = variant.isPreOrder;
+      const insufficient = !isPreOrder && variant.stock < line.quantity;
       const issue = unavailable
         ? "This item is no longer available."
         : insufficient
@@ -137,6 +139,7 @@ export async function getCheckoutQuoteAction(input: {
         quantity: line.quantity,
         lineTotalCentavos: lineTotal,
         stock: variant.stock,
+        isPreOrder,
         imageUrl: variant.product.images[0]?.media.secureUrl ?? null,
         imageAlt: variant.product.images[0]?.alt ?? `${variant.product.name} product image`,
         issue,
@@ -398,7 +401,7 @@ export async function placeOrderAction(
         ) {
           throw new CheckoutError("An item in your cart is no longer available.", "lines");
         }
-        if (variant.stock < line.quantity) {
+        if (!variant.isPreOrder && variant.stock < line.quantity) {
           throw new CheckoutError(
             `Only ${variant.stock} of ${variant.product.name} (${variant.label}) remain.`,
             "lines",
@@ -412,10 +415,12 @@ export async function placeOrderAction(
           unitPriceCentavos: variant.priceCentavos,
           quantity: line.quantity,
           lineTotalCentavos: variant.priceCentavos * line.quantity,
+          isPreOrder: variant.isPreOrder,
         };
       });
 
       for (const item of orderItems) {
+        if (item.isPreOrder) continue;
         const updated = await transaction.productVariant.updateMany({
           where: {
             id: item.variantId,
@@ -433,6 +438,7 @@ export async function placeOrderAction(
         }
       }
 
+      const hasPreOrder = orderItems.some((item) => item.isPreOrder);
       const subtotalCentavos = orderItems.reduce((sum, item) => sum + item.lineTotalCentavos, 0);
       const shippingCentavos = calculateShipping(
         subtotalCentavos,
@@ -464,12 +470,13 @@ export async function placeOrderAction(
             create: {
               fromStatus: null,
               toStatus: "PENDING",
-              note:
+              note: `${
                 input.paymentMethod === "COD"
                   ? "Order placed. Cash on delivery."
                   : input.paymentMethod === "GCASH"
                     ? "Order placed. Awaiting GCash verification."
-                    : "Order placed. Awaiting card payment.",
+                    : "Order placed. Awaiting card payment."
+              }${hasPreOrder ? " Includes pre-order items." : ""}`,
             },
           },
         },

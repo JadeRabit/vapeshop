@@ -45,7 +45,7 @@ export async function updateOrderStatusAction(
       const order = await transaction.order.findUnique({
         where: { orderNumber },
         include: {
-          items: { select: { variantId: true, quantity: true } },
+          items: { select: { variantId: true, quantity: true, isPreOrder: true } },
           paymentProof: { select: { id: true } },
         },
       });

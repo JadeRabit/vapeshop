@@ -5,10 +5,17 @@ type StockBadgeProps = {
   stock: number;
   threshold?: number;
   inactive?: boolean;
+  preOrder?: boolean;
   className?: string;
 };
 
-export function StockBadge({ stock, threshold = 5, inactive, className }: StockBadgeProps) {
+export function StockBadge({
+  stock,
+  threshold = 5,
+  inactive,
+  preOrder,
+  className,
+}: StockBadgeProps) {
   if (inactive) {
     return (
       <Badge variant="muted" className={className}>
@@ -19,8 +26,8 @@ export function StockBadge({ stock, threshold = 5, inactive, className }: StockB
 
   if (stock <= 0) {
     return (
-      <Badge variant="destructive" className={className}>
-        Out of stock
+      <Badge variant={preOrder ? "info" : "destructive"} className={className}>
+        {preOrder ? "Pre-order" : "Out of stock"}
       </Badge>
     );
   }

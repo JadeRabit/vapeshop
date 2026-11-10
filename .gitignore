@@ -25,6 +25,9 @@ blob-report/
 prisma/*.db
 prisma/*.db-journal
 
+# Local development database
+.data/
+
 # Environment
 .env
 .env.local

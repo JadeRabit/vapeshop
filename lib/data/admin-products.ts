@@ -22,6 +22,7 @@ export type AdminProductVariantDTO = {
   priceCentavos: number;
   stock: number;
   lowStockThreshold: number;
+  isPreOrder: boolean;
   isActive: boolean;
   sortOrder: number;
   hasOrderHistory: boolean;
@@ -53,6 +54,7 @@ export type AdminProductDTO = {
   lowestPriceCentavos: number;
   totalStock: number;
   isLowStock: boolean;
+  hasPreOrder: boolean;
   hasOrderHistory: boolean;
   variants: AdminProductVariantDTO[];
   images: AdminProductImageDTO[];
@@ -124,6 +126,7 @@ function mapAdminProduct(product: AdminProductWithRelations): AdminProductDTO {
     isLowStock: activeVariants.some(
       (variant) => variant.stock <= variant.lowStockThreshold,
     ),
+    hasPreOrder: product.variants.some((variant) => variant.isPreOrder && variant.isActive),
     hasOrderHistory: product.variants.some((variant) => variant._count.orderItems > 0),
     variants: product.variants.map((variant) => ({
       id: variant.id,
@@ -135,6 +138,7 @@ function mapAdminProduct(product: AdminProductWithRelations): AdminProductDTO {
       priceCentavos: variant.priceCentavos,
       stock: variant.stock,
       lowStockThreshold: variant.lowStockThreshold,
+      isPreOrder: variant.isPreOrder,
       isActive: variant.isActive,
       sortOrder: variant.sortOrder,
       hasOrderHistory: variant._count.orderItems > 0,

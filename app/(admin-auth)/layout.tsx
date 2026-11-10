@@ -4,9 +4,9 @@ import {
   LayoutDashboard,
   LockKeyhole,
   Package,
-  ShieldCheck,
   ShoppingBag,
 } from "lucide-react";
+import { SiteLogo } from "@/components/shared/site-logo";
 import { siteConfig } from "@/lib/config";
 
 export default function AdminAuthLayout({ children }: { children: React.ReactNode }) {
@@ -24,9 +24,7 @@ export default function AdminAuthLayout({ children }: { children: React.ReactNod
       <div className="relative mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 sm:px-6">
         <header className="flex items-center justify-between gap-4 py-6">
           <Link href="/" className="flex items-center gap-3" aria-label={`${siteConfig.name} storefront`}>
-            <span className="grid size-10 place-items-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
-              <ShieldCheck className="size-5" aria-hidden="true" />
-            </span>
+            <SiteLogo className="size-10 border-primary/30 bg-primary/10" />
             <span>
               <span className="block font-display text-sm font-semibold tracking-tight">
                 {siteConfig.name}

@@ -1,6 +1,6 @@
 # Deployment guide
 
-This guide takes a clean checkout to a production deployment on Vercel with Neon PostgreSQL, Cloudinary media, and Stripe card payments. COD and GCash work without Stripe/Cloudinary; GCash receipt upload requires Cloudinary.
+This guide takes a clean checkout to a production deployment on Vercel with Supabase PostgreSQL, Cloudinary media, and Stripe card payments. COD and GCash work without Stripe/Cloudinary; GCash receipt upload requires Cloudinary.
 
 For launch-day checks, rollback, backups, and business inputs, see [operations.md](operations.md).
 
@@ -18,37 +18,58 @@ Browser
   │     ├── /api/admin/payment-proof/[orderId]
   │     └── /api/health
   │
-  ├── Neon PostgreSQL (pooled runtime URL, direct migration URL)
+  ├── Supabase PostgreSQL (transaction pooler at runtime, direct URL for migrations)
   ├── Cloudinary (public product images, authenticated GCash proofs)
   └── Stripe hosted Checkout + webhook
 ```
 
 The build does not run migrations and does not query the database. Dynamic database-backed routes require a reachable database at runtime.
 
-## 1. Create the PostgreSQL database
+## 1. Create the Supabase database
 
-Neon is recommended because the application uses the Neon serverless adapter when `DATABASE_URL` contains `neon.tech`.
+Supabase is the recommended provider. The application uses the standard Prisma PostgreSQL driver for Supabase; the Neon serverless adapter is only selected when `DATABASE_URL` contains `neon.tech`.
 
-1. Create a Neon project and a production database.
-2. Copy two connection strings:
-   - **Pooled** connection (host contains `-pooler`) → `DATABASE_URL`
-   - **Direct** connection (no pooler) → `DIRECT_URL`
+1. Create a Supabase project in the region closest to your customers (for the Philippines, choose the nearest Singapore region).
+2. Open **Project Settings → Database → Connection string** and copy two URIs:
+   - **Transaction pooler** (port `6543`) → `DATABASE_URL`, used by the application at runtime.
+   - **Direct connection** (port `5432`) → `DIRECT_URL`, used only by Prisma migrations and the seed script.
 3. Keep `sslmode=require` on both. Never disable TLS in production.
-4. Optionally create a separate Neon branch/database for previews.
+4. URL-encode special characters in the database password (for example `@` becomes `%40`).
+5. Co-locate compute and data when the Vercel plan allows region selection: choose the same region for the Vercel functions and the Supabase project (for example `sin1` in Singapore for Philippine traffic).
+6. Optionally create a separate Supabase project/database for preview deployments. Do not point previews at production.
 
-The runtime Prisma client uses the pooled URL and the Neon WebSocket adapter. Prisma CLI migrations and the seed script use the direct URL. Apply committed migrations from a trusted machine or CI job:
+Expected connection string shapes:
+
+```dotenv
+DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require"
+```
+
+If the direct host is IPv6-only on your network or CI runner, use the Supabase **Session pooler** on port `5432` for `DIRECT_URL`:
+
+```dotenv
+DIRECT_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require"
+```
+
+The transaction pooler does not support prepared statements. The `pgbouncer=true` parameter makes Prisma compatible with it, and `connection_limit=1` prevents each serverless instance from opening unnecessary connections. Never run migrations through the transaction pooler.
+
+Apply committed migrations from a trusted machine or CI job:
 
 ```bash
-DATABASE_URL="postgresql://…-pooler…" \
-DIRECT_URL="postgresql://…direct…" \
+DATABASE_URL="postgresql://…pooler…:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require" \
+DIRECT_URL="postgresql://…direct…:5432/postgres?sslmode=require" \
 npm run db:migrate:deploy
 ```
 
-On PowerShell, set the environment variables before the command or place them in `.env` and run:
+On PowerShell, set the environment variables before the command:
 
 ```powershell
+$env:DATABASE_URL = "postgresql://…pooler…:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+$env:DIRECT_URL = "postgresql://…direct…:5432/postgres?sslmode=require"
 npm run db:migrate:deploy
 ```
+
+Prefer shell-scoped variables or a temporary `.env.production` outside version control. Do not paste production credentials into shared shell history or CI logs.
 
 Do not use `prisma db push` in production. It bypasses the migration history. Do not add migrations to the Vercel build command: a failed migration should not leave a deployment half-live, and preview builds must not mutate production data.
 
@@ -59,15 +80,16 @@ Do not use `prisma db push` in production. It bypasses the migration history. Do
 - Review the SQL in `prisma/migrations` before applying.
 - Never edit a migration that has already been applied to a shared environment.
 - The initial migration is `prisma/migrations/20261026133000_init`.
+- The pre-order migration is `prisma/migrations/20261104090000_add_pre_order`.
 
 ## 2. Configure Vercel environment variables
 
-Set values per environment (Production, Preview, Development) in **Project → Settings → Environment Variables**. Do not commit `.env`.
+Set values per environment (Production, Preview, Development) in **Project → Settings → Environment Variables**, or create them with the Vercel CLI. Do not commit `.env`.
 
 | Variable | Production | Preview | Notes |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Required | Separate branch/database | Pooled URL |
-| `DIRECT_URL` | Required | Separate branch/database | Direct URL; used by tooling |
+| `DATABASE_URL` | Required | Separate Supabase project/database | Transaction pooler URL (port `6543`) with `pgbouncer=true&connection_limit=1&sslmode=require` |
+| `DIRECT_URL` | Required | Separate Supabase project/database | Direct or session-pooler URL (port `5432`); used by migration/seed tooling |
 | `AUTH_SECRET` | Required | Required, different value | Long random secret |
 | `NEXTAUTH_SECRET` | Optional fallback | Optional | Leave unset when using `AUTH_SECRET` |
 | `AUTH_URL` | Recommended | Preview URL | Canonical auth origin |
@@ -90,10 +112,11 @@ openssl rand -base64 32
 
 Important:
 
-- `NEXT_PUBLIC_APP_URL` must be the exact public origin, for example `https://vapordistrict.ph`. It is used for Stripe success/cancel URLs, metadata, sitemap, and robots.
+- `NEXT_PUBLIC_APP_URL` must be the exact public origin, for example `https://your-store.vercel.app` or `https://your-domain.ph`. It is used for Stripe success/cancel URLs, metadata, sitemap, and robots.
 - `AUTH_URL` should also be the canonical origin. Auth.js can infer the host on Vercel, but explicit values are safer when using custom domains.
-- Keep `AUTH_SECRET`, Cloudinary, Stripe, and cron secrets server-side. Only `NEXT_PUBLIC_APP_URL` is public.
-- Preview deployments should not share the production database. Use a Neon branch and Stripe test mode.
+- Keep `AUTH_SECRET`, Cloudinary, Stripe, `DATABASE_URL`, `DIRECT_URL`, and cron secrets server-side. Only `NEXT_PUBLIC_APP_URL` is public.
+- Preview deployments should not share the production database. Use a separate Supabase project/database and Stripe test mode.
+- After changing environment variables in Vercel, redeploy so the new values take effect.
 
 ## 3. Configure Cloudinary
 
@@ -150,13 +173,31 @@ If `NEXT_PUBLIC_APP_URL` is wrong, Stripe can redirect customers to the wrong ho
 
 ## 5. Configure the Vercel project
 
-1. Import the repository into Vercel.
+### Option A — Git integration (recommended)
+
+1. Import `https://github.com/JadeRabit/vapeshop` into Vercel.
 2. Framework preset: Next.js.
 3. Build command: `npm run build` (default).
 4. Install command: `npm install`.
 5. Output: Next.js default.
-6. Add the environment variables from the table above.
-7. Deploy.
+6. Add the environment variables from the table above to Production and Preview.
+7. Deploy. Every push to the connected branch creates a deployment.
+
+### Option B — Vercel CLI
+
+```bash
+npx vercel login
+npx vercel link
+npx vercel env add DATABASE_URL production
+npx vercel env add DIRECT_URL production
+npx vercel env add AUTH_SECRET production
+npx vercel env add AUTH_URL production
+npx vercel env add NEXT_PUBLIC_APP_URL production
+npx vercel env add CRON_SECRET production
+npx vercel --prod
+```
+
+The CLI prompts for each value. Avoid passing secrets with `--token` or inline shell arguments on shared machines. Add the remaining Cloudinary/Stripe variables the same way or through the dashboard.
 
 `vercel.json` contains the cleanup schedule:
 
@@ -182,12 +223,12 @@ The route returns JSON with `expired` and `checked` counts and is safe to call r
 A recommended first release sequence:
 
 ```bash
-# Locally or in CI, with production credentials in .env
+# Locally or in CI, with production Supabase credentials in the environment
 npm ci
 npm run db:migrate:deploy
 SEED_ADMIN_EMAIL="admin@yourdomain.ph" \
 SEED_ADMIN_PASSWORD="use-a-unique-strong-password" \
-SEED_ADMIN_NAME="Store Admin" \
+SEED_ADMIN_NAME="SmokeyFruit Admin" \
 SEED_DEMO_DATA="false" \
 npm run db:seed
 ```
@@ -212,7 +253,7 @@ After seeding, sign in at `/admin/login` and verify the `/admin` dashboard. Do n
 - `GET /api/health` returns application liveness only (`status`, `service`, timestamp) with `Cache-Control: no-store`. It deliberately does not expose database state or secrets.
 - `GET /api/cron/expire-orders` returns counts and requires the cron bearer secret.
 - Stripe webhook failures are logged server-side without returning stack traces.
-- Use Vercel function logs and Neon query/monitoring views for launch monitoring.
+- Use Vercel function logs and the Supabase dashboard (**Reports**, **Logs**, **Database → Query performance**) for launch monitoring.
 - Add an uptime monitor for `/api/health`, the storefront, and `/login`.
 - Add a platform WAF/rate-limit rule in front of `/login`, `/register`, and `/api/auth/*`; the built-in limiter is best-effort and not durable across serverless instances.
 
@@ -220,7 +261,7 @@ After seeding, sign in at `/admin/login` and verify the `/admin` dashboard. Do n
 
 For each preview deployment:
 
-- Use a Neon branch, not the production database.
+- Use a separate Supabase project/database, not the production database. Supabase branching availability depends on the plan; a dedicated free/staging project is sufficient for a small store.
 - Use Stripe test keys and a test webhook endpoint.
 - Use a separate Cloudinary folder/cloud if demo media should not mix with production.
 - Set `NEXT_PUBLIC_APP_URL` and `AUTH_URL` to the preview URL.
@@ -228,8 +269,8 @@ For each preview deployment:
 
 ## 9. Deployment checklist
 
-- [ ] Production Neon database created; pooled and direct URLs stored.
-- [ ] `npm run db:migrate:deploy` succeeded against the production direct URL.
+- [ ] Production Supabase project created; transaction-pooler and direct/session-pooler URLs stored.
+- [ ] `npm run db:migrate:deploy` succeeded against the production `DIRECT_URL`.
 - [ ] Admin seeded with a unique password.
 - [ ] `AUTH_SECRET`, `AUTH_URL`, and `NEXT_PUBLIC_APP_URL` set for Production.
 - [ ] Cloudinary credentials set; product upload and GCash proof preview tested.

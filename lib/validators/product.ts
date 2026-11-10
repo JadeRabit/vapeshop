@@ -25,6 +25,7 @@ export const productVariantInputSchema = z.object({
   priceCentavos: z.coerce.number().int().min(1, "Price must be greater than zero."),
   stock: z.coerce.number().int().min(0, "Stock cannot be negative."),
   lowStockThreshold: z.coerce.number().int().min(0, "Threshold cannot be negative."),
+  isPreOrder: z.boolean().default(false),
   isActive: z.boolean().default(true),
   sortOrder: z.coerce.number().int().min(0).default(0),
 });

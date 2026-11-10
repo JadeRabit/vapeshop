@@ -19,11 +19,14 @@ import { StockBadge } from "@/components/shared/stock-badge";
 import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
 import type { ProductDetailDTO } from "@/lib/data/catalog";
 import { flavorProfiles, siteConfig } from "@/lib/config";
+import { MAX_LINE_QUANTITY } from "@/lib/cart-rules";
 import { cn } from "@/lib/utils";
 
 export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
   const [selectedVariantId, setSelectedVariantId] = useState(() => {
-    const purchasable = product.variants.find((variant) => variant.stock > 0);
+    const purchasable =
+      product.variants.find((variant) => variant.stock > 0) ??
+      product.variants.find((variant) => variant.isPreOrder);
     return purchasable?.id ?? product.variants[0]?.id ?? "";
   });
   const [quantity, setQuantity] = useState(1);
@@ -33,6 +36,9 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
     product.variants.find((variant) => variant.id === selectedVariantId) ?? product.variants[0];
   const images = product.images;
   const activeImage = images[imageIndex] ?? images[0];
+  const maxQuantity = selectedVariant?.isPreOrder
+    ? MAX_LINE_QUANTITY
+    : Math.max(Math.min(selectedVariant?.stock ?? 1, MAX_LINE_QUANTITY), 1);
 
   function selectVariant(variantId: string) {
     setSelectedVariantId(variantId);
@@ -165,6 +171,7 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
             stock={selectedVariant?.stock ?? 0}
             threshold={selectedVariant?.lowStockThreshold}
             inactive={!selectedVariant}
+            preOrder={selectedVariant?.isPreOrder}
           />
         </div>
 
@@ -180,12 +187,14 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
               className="mt-1 block text-3xl font-semibold"
             />
             {selectedVariant ? (
-              <p className="mt-1 text-xs text-muted-foreground">SKU {selectedVariant.sku}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {selectedVariant.label} · SKU {selectedVariant.sku}
+              </p>
             ) : null}
           </div>
           {flavorLabel || selectedVariant?.nicotineMg ? (
             <div className="text-right text-xs text-muted-foreground">
-              {flavorLabel ? <p>{flavorLabel}</p> : null}
+              {flavorLabel ? <p className="font-semibold text-primary">{flavorLabel}</p> : null}
               {selectedVariant?.nicotineMg ? <p>{selectedVariant.nicotineMg}mg</p> : null}
             </div>
           ) : null}
@@ -193,10 +202,14 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
 
         {product.variants.length > 0 ? (
           <fieldset className="mt-6">
-            <legend className="text-sm font-medium">Choose an option</legend>
+            <legend className="text-sm font-medium">Choose a flavor or option</legend>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Each flavor or option has its own price and available stock.
+            </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {product.variants.map((variant) => {
-                const disabled = variant.stock <= 0 || !variant.isActive;
+                const disabled =
+                  !variant.isActive || (variant.stock <= 0 && !variant.isPreOrder);
                 return (
                   <button
                     key={variant.id}
@@ -215,13 +228,27 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
                     <span className="flex items-center justify-between gap-2">
                       <span className="text-sm font-semibold">{variant.label}</span>
                       {variant.stock <= 0 ? (
-                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-destructive">
-                          Sold out
+                        <span
+                          className={cn(
+                            "text-[10px] font-bold uppercase tracking-[0.12em]",
+                            variant.isPreOrder ? "text-primary" : "text-destructive",
+                          )}
+                        >
+                          {variant.isPreOrder ? "Pre-order" : "Sold out"}
                         </span>
                       ) : null}
                     </span>
-                    <span className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                       <Price centavos={variant.priceCentavos} />
+                      {variant.flavorProfile ? (
+                        <span>
+                          ·{" "}
+                          {
+                            flavorProfiles.find((flavor) => flavor.value === variant.flavorProfile)
+                              ?.label
+                          }
+                        </span>
+                      ) : null}
                       {variant.stock > 0 ? <span>· {variant.stock} available</span> : null}
                     </span>
                   </button>
@@ -235,21 +262,24 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
           <QuantityStepper
             value={quantity}
             min={1}
-            max={Math.max(Math.min(selectedVariant?.stock ?? 1, 99), 1)}
+            max={maxQuantity}
             onDecrease={() => setQuantity((current) => Math.max(1, current - 1))}
             onIncrease={() =>
-              setQuantity((current) =>
-                Math.min(current + 1, Math.max(Math.min(selectedVariant?.stock ?? 1, 99), 1)),
-              )
+              setQuantity((current) => Math.min(current + 1, maxQuantity))
             }
+            onChange={setQuantity}
             label="Product quantity"
           />
-          {selectedVariant && selectedVariant.stock > 0 ? (
+          {selectedVariant && (selectedVariant.stock > 0 || selectedVariant.isPreOrder) ? (
             <AddToCartButton
               size="lg"
               className="flex-1"
               quantity={quantity}
-              label={`Add ${quantity} to cart`}
+              label={
+                selectedVariant.isPreOrder
+                  ? `Pre-order ${quantity}`
+                  : `Add ${quantity} to cart`
+              }
               line={{
                 variantId: selectedVariant.id,
                 productId: product.id,
@@ -261,6 +291,7 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
                 imageUrl: activeImage?.url ?? selectedVariant.imageUrl ?? null,
                 imageAlt: activeImage?.alt ?? selectedVariant.imageAlt ?? product.name,
                 stock: selectedVariant.stock,
+                isPreOrder: selectedVariant.isPreOrder,
               }}
             />
           ) : (
@@ -270,12 +301,18 @@ export function ProductDetailView({ product }: { product: ProductDetailDTO }) {
           )}
         </div>
 
-        {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= selectedVariant.lowStockThreshold ? (
+        {selectedVariant && selectedVariant.isPreOrder ? (
+          <p className="mt-3 text-xs text-primary" role="status">
+            Pre-order this option. We will reserve your order and ship it once stock arrives.
+          </p>
+        ) : selectedVariant &&
+          selectedVariant.stock > 0 &&
+          selectedVariant.stock <= selectedVariant.lowStockThreshold ? (
           <p className="mt-3 text-xs text-amber-300" role="status">
             Only {selectedVariant.stock} left of this option. Stock is confirmed again at checkout.
           </p>
         ) : null}
-        {selectedVariant && selectedVariant.stock <= 0 ? (
+        {selectedVariant && selectedVariant.stock <= 0 && !selectedVariant.isPreOrder ? (
           <p className="mt-3 text-xs text-destructive" role="status">
             This option is unavailable. Choose another option or check back soon.
           </p>

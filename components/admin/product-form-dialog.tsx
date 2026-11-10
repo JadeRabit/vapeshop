@@ -59,6 +59,7 @@ type VariantDraft = {
   pricePesos: string;
   stock: string;
   lowStockThreshold: string;
+  isPreOrder: boolean;
   isActive: boolean;
 };
 
@@ -88,6 +89,7 @@ function emptyVariant(): VariantDraft {
     pricePesos: "",
     stock: "0",
     lowStockThreshold: "5",
+    isPreOrder: false,
     isActive: true,
   };
 }
@@ -104,6 +106,7 @@ function variantFromDTO(variant: AdminProductVariantDTO): VariantDraft {
     pricePesos: (variant.priceCentavos / 100).toFixed(2),
     stock: String(variant.stock),
     lowStockThreshold: String(variant.lowStockThreshold),
+    isPreOrder: variant.isPreOrder,
     isActive: variant.isActive,
   };
 }
@@ -194,6 +197,10 @@ function ProductFormDialogInner({
   const fieldError = (field: string) => errors[field]?.[0];
   const variantsError = fieldError("variants");
   const imagesError = fieldError("images");
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const isFlavorCategory = ["nic-salts", "freebase", "disposables"].includes(
+    selectedCategory?.slug ?? "",
+  );
 
   const variantsPayload = variants.map((variant, index) => ({
     id: variant.id,
@@ -205,6 +212,7 @@ function ProductFormDialogInner({
     priceCentavos: Math.round(Number(variant.pricePesos) * 100),
     stock: Number(variant.stock),
     lowStockThreshold: Number(variant.lowStockThreshold),
+    isPreOrder: variant.isPreOrder,
     isActive: variant.isActive,
     sortOrder: index,
   }));
@@ -434,10 +442,11 @@ function ProductFormDialogInner({
                   id={`${prefix}-variants`}
                   className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground"
                 >
-                  Variants
+                  {isFlavorCategory ? "Flavors" : "Flavors & options"}
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  At least one active variant is required to publish.
+                  Add one entry per flavor or option. Customers choose from these on the product
+                  page, and each one can have its own price, stock, and SKU.
                 </p>
               </div>
               <Button
@@ -446,7 +455,7 @@ function ProductFormDialogInner({
                 size="sm"
                 onClick={() => setVariants((current) => [...current, emptyVariant()])}
               >
-                <Plus aria-hidden="true" /> Add variant
+                <Plus aria-hidden="true" /> {isFlavorCategory ? "Add flavor" : "Add variant"}
               </Button>
             </div>
 
@@ -468,12 +477,12 @@ function ProductFormDialogInner({
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        Variant {index + 1}
+                        {isFlavorCategory ? "Flavor" : "Variant"} {index + 1}
                         {isLow ? (
                           <span className="ml-2 text-amber-300">Low stock</span>
                         ) : null}
                       </p>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <label className="flex cursor-pointer items-center gap-2 text-xs">
                           <Checkbox
                             checked={variant.isActive}
@@ -482,6 +491,15 @@ function ProductFormDialogInner({
                             }
                           />
                           Active
+                        </label>
+                        <label className="flex cursor-pointer items-center gap-2 text-xs">
+                          <Checkbox
+                            checked={variant.isPreOrder}
+                            onCheckedChange={(checked) =>
+                              updateVariant(variant.key, { isPreOrder: checked === true })
+                            }
+                          />
+                          Pre-order
                         </label>
                         <Button
                           type="button"
@@ -504,14 +522,16 @@ function ProductFormDialogInner({
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <Label htmlFor={`${prefix}-v${index}-label`}>Label</Label>
+                        <Label htmlFor={`${prefix}-v${index}-label`}>
+                          {isFlavorCategory ? "Flavor name" : "Option name"}
+                        </Label>
                         <Input
                           id={`${prefix}-v${index}-label`}
                           value={variant.label}
                           onChange={(event) =>
                             updateVariant(variant.key, { label: event.target.value })
                           }
-                          placeholder="30mg · 30ml"
+                          placeholder={isFlavorCategory ? "Lychee Ice" : "30mg · 30ml"}
                           required
                           maxLength={100}
                         />
@@ -524,7 +544,7 @@ function ProductFormDialogInner({
                           onChange={(event) =>
                             updateVariant(variant.key, { sku: event.target.value })
                           }
-                          placeholder="BRAND-FLAVOR-30"
+                          placeholder={isFlavorCategory ? "BRAND-LYCHEE-ICE" : "BRAND-FLAVOR-30"}
                           required
                           maxLength={64}
                         />
@@ -546,7 +566,7 @@ function ProductFormDialogInner({
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor={`${prefix}-v${index}-stock`}>Stock</Label>
+                        <Label htmlFor={`${prefix}-v${index}-stock`}>Stock (any quantity)</Label>
                         <Input
                           id={`${prefix}-v${index}-stock`}
                           value={variant.stock}
@@ -627,6 +647,13 @@ function ProductFormDialogInner({
                         />
                       </div>
                     </div>
+
+                    {variant.isPreOrder ? (
+                      <p className="mt-3 text-xs leading-5 text-primary">
+                        Pre-order enabled: customers can check out even when stock is zero. Stock is
+                        not reserved or decremented for pre-order lines.
+                      </p>
+                    ) : null}
 
                     {variant.id && !variant.isActive ? (
                       <p className="mt-3 text-xs text-muted-foreground">

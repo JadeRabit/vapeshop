@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { requirePageUser } from "@/lib/auth-guards";
 import { getOrderForUser } from "@/lib/data/account";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OrderStatusTimeline } from "@/components/storefront/order-status-timeline";
 import { PaymentProcessing } from "@/components/checkout/payment-processing";
@@ -121,9 +122,10 @@ export default async function AccountOrderDetailPage({ params }: OrderDetailPage
                         item.productName
                       )}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                       {item.variantLabel} · {item.sku} · Qty {item.quantity}
-                    </p>
+                      {item.isPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
+                    </div>
                   </div>
                   <p className="whitespace-nowrap text-sm font-semibold tabular-nums">
                     {formatPhp(item.lineTotalCentavos)}

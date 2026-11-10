@@ -167,9 +167,10 @@ export default async function AdminOrderDetailPage({ params }: AdminOrderDetailP
                         >
                           {item.productName}
                         </Link>
-                        <span className="block text-xs text-muted-foreground">
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                           {item.variantLabel}
-                        </span>
+                          {item.isPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
+                        </div>
                       </TableCell>
                       <TableCell className="hidden text-xs text-muted-foreground sm:table-cell">
                         {item.sku}

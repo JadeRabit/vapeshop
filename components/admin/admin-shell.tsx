@@ -11,7 +11,6 @@ import {
   Menu,
   Package,
   ShoppingBag,
-  Sparkles,
   Star,
   Store,
   Users,
@@ -26,7 +25,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { RefreshButton } from "@/components/admin/refresh-button";
+import { SiteLogo } from "@/components/shared/site-logo";
 import { signOutAction } from "@/lib/actions/auth";
+import { siteConfig } from "@/lib/config";
 import { getInitials } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -171,11 +172,9 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col gap-6">
       <Link href="/admin" className="flex items-center gap-2.5" onClick={onNavigate}>
-        <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_24px_rgba(196,255,77,.2)]">
-          <Sparkles className="size-4" aria-hidden="true" />
-        </span>
+        <SiteLogo className="shadow-[0_0_24px_rgba(196,255,77,.12)]" />
         <span>
-          <span className="block font-display text-sm font-semibold">Vapor District</span>
+          <span className="block font-display text-sm font-semibold">{siteConfig.name}</span>
           <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Admin console
           </span>

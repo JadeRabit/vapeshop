@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, LockKeyhole, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -11,6 +12,7 @@ import { calculateShipping } from "@/lib/money";
 import { formatPhp } from "@/lib/money";
 import { siteConfig } from "@/lib/config";
 import {
+  MAX_LINE_QUANTITY,
   getLineWarning,
   selectCartCount,
   selectCartSubtotal,
@@ -23,6 +25,7 @@ export function CartPage({ isAuthenticated }: { isAuthenticated: boolean }) {
   const lines = useCartStore((state) => state.lines);
   const increment = useCartStore((state) => state.increment);
   const decrement = useCartStore((state) => state.decrement);
+  const setQuantity = useCartStore((state) => state.setQuantity);
   const removeLine = useCartStore((state) => state.removeLine);
   const clearCart = useCartStore((state) => state.clearCart);
   const count = useCartStore(selectCartCount);
@@ -33,7 +36,9 @@ export function CartPage({ isAuthenticated }: { isAuthenticated: boolean }) {
     siteConfig.freeShippingThresholdCentavos,
     siteConfig.shippingFlatCentavos,
   );
-  const blocked = lines.some((line) => line.stock <= 0 || line.quantity > line.stock);
+  const blocked = lines.some(
+    (line) => !line.isPreOrder && (line.stock <= 0 || line.quantity > line.stock),
+  );
   const checkoutHref = isAuthenticated
     ? "/checkout"
     : `/login?callbackUrl=${encodeURIComponent("/checkout")}`;
@@ -122,9 +127,10 @@ export function CartPage({ isAuthenticated }: { isAuthenticated: boolean }) {
                         >
                           {line.productName}
                         </Link>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                           {line.variantLabel} · {line.sku}
-                        </p>
+                          {line.isPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
+                        </div>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {formatPhp(line.unitPriceCentavos)} each
                         </p>
@@ -145,9 +151,10 @@ export function CartPage({ isAuthenticated }: { isAuthenticated: boolean }) {
                       <QuantityStepper
                         value={line.quantity}
                         min={1}
-                        max={Math.max(line.stock, 1)}
+                        max={line.isPreOrder ? MAX_LINE_QUANTITY : Math.max(line.stock, 1)}
                         onDecrease={() => decrement(line.variantId)}
                         onIncrease={() => increment(line.variantId)}
+                        onChange={(quantity) => setQuantity(line.variantId, quantity)}
                         label={`${line.productName} quantity`}
                       />
                       <span className="text-base font-semibold tabular-nums">

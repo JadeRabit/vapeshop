@@ -166,6 +166,7 @@ export function CheckoutWizard({
     paymentMethod !== "GCASH" || (gcashReference.trim().length >= 6 && Boolean(proofMediaId));
   const canContinuePayment = gcashReady && (paymentMethod !== "CARD" || stripeEnabled);
   const checkoutBlocked = Boolean(quote?.hasIssues || priceChanged || !quote?.ok);
+  const hasPreOrder = Boolean(quote?.lines?.some((line) => line.isPreOrder));
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
@@ -495,6 +496,15 @@ export function CheckoutWizard({
                   </AlertDescription>
                 </Alert>
               ) : null}
+              {hasPreOrder ? (
+                <Alert variant="info">
+                  <AlertCircle aria-hidden="true" />
+                  <AlertDescription>
+                    This order includes pre-order items. They will be fulfilled once stock arrives;
+                    stock is not reserved for pre-order lines.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
 
               <div className="space-y-3">
                 {quoteLoading || !quote?.ok ? (
@@ -519,17 +529,16 @@ export function CheckoutWizard({
                           />
                         ) : null}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold">
-                          {line.productName}
-                        </span>
-                        <span className="block truncate text-xs text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{line.productName}</div>
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                           {line.variantLabel} · Qty {line.quantity}
-                        </span>
+                          {line.isPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
+                        </div>
                         {line.issue ? (
-                          <span className="mt-1 block text-xs text-amber-300">{line.issue}</span>
+                          <div className="mt-1 text-xs text-amber-300">{line.issue}</div>
                         ) : null}
-                      </span>
+                      </div>
                       <span className="text-sm font-semibold tabular-nums">
                         {formatPhp(line.lineTotalCentavos)}
                       </span>

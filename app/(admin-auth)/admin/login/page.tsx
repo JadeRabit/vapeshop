@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AdminLoginForm } from "@/components/auth/admin-login-form";
+import { siteConfig } from "@/lib/config";
 import { safeCallbackUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Admin sign in",
-  description: "Restricted administrator access to the Vapor District console.",
+  description: `Restricted administrator access to the ${siteConfig.name} console.`,
   robots: { index: false, follow: false },
 };
 

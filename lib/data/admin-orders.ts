@@ -18,6 +18,7 @@ export type AdminOrderSummaryDTO = {
   paymentReference: string | null;
   hasPaymentProof: boolean;
   attentionReason: AdminOrderAttentionReason | null;
+  hasPreOrder: boolean;
   totalCentavos: number;
   itemCount: number;
   createdAt: string;
@@ -82,6 +83,7 @@ export type AdminOrderDetailDTO = {
     unitPriceCentavos: number;
     quantity: number;
     lineTotalCentavos: number;
+    isPreOrder: boolean;
     productSlug: string;
   }>;
   events: Array<{
@@ -163,7 +165,7 @@ export async function getAdminOrderList({
         paymentProofId: true,
         totalCentavos: true,
         createdAt: true,
-        items: { select: { quantity: true } },
+        items: { select: { quantity: true, isPreOrder: true } },
       },
     }),
     prisma.order.count({ where }),
@@ -207,6 +209,7 @@ export async function getAdminOrderList({
         paymentReference: order.paymentReference,
         hasPaymentProof: Boolean(order.paymentProofId),
         attentionReason: proofMissing ? "PROOF" : aging ? "AGING" : null,
+        hasPreOrder: order.items.some((item) => item.isPreOrder),
         totalCentavos: order.totalCentavos,
         itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
         createdAt: order.createdAt.toISOString(),
@@ -273,6 +276,7 @@ export const getAdminOrder = cache(
         unitPriceCentavos: item.unitPriceCentavos,
         quantity: item.quantity,
         lineTotalCentavos: item.lineTotalCentavos,
+        isPreOrder: item.isPreOrder,
         productSlug: item.variant.product.slug,
       })),
       events: order.events.map((event) => ({

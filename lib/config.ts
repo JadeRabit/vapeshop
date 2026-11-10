@@ -1,11 +1,12 @@
 export const siteConfig = {
-  name: "Vapor District",
-  legalName: "Vapor District Trading",
+  name: "SmokeyFruit Co.",
+  legalName: "SmokeyFruit Co.",
   tagline: "Elevated vapor. Zero compromise.",
+  logo: "/logo.png",
   description:
     "A curated 21+ vape shop for premium e-liquids, pod systems, and everyday essentials. Adult signature required on delivery.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  supportEmail: "support@vapordistrict.ph",
+  supportEmail: "drarkgraphicsken@gmail.com",
   supportPhone: "+63 917 555 0121",
   address: "Metro Manila, Philippines",
   currency: "PHP",

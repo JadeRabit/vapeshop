@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AtSign, Mail, MapPin, Phone, Sparkles } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
+import { SiteLogo } from "@/components/shared/site-logo";
 import { availableCategoryDefinitions, siteConfig, storefrontNav } from "@/lib/config";
 
 export function SiteFooter() {
@@ -9,9 +10,7 @@ export function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr]">
           <div className="space-y-4">
             <Link href="/" className="flex w-fit items-center gap-2.5">
-              <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-                <Sparkles className="size-4" aria-hidden="true" />
-              </span>
+              <SiteLogo />
               <span className="font-display text-base font-semibold tracking-tight">
                 {siteConfig.name}
               </span>
@@ -99,10 +98,6 @@ export function SiteFooter() {
               <li className="flex items-center gap-2.5">
                 <MapPin className="size-4 text-primary" aria-hidden="true" />
                 {siteConfig.address}
-              </li>
-              <li className="flex items-center gap-2.5">
-                <AtSign className="size-4 text-primary" aria-hidden="true" />
-                <span>@vapordistrict.ph</span>
               </li>
             </ul>
           </div>

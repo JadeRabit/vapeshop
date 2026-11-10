@@ -40,4 +40,13 @@ describe("cart quantity rules", () => {
     expect(lineWarning({ stock: 2, quantity: 3 })).toBe("Only 2 left");
     expect(lineWarning({ stock: 3, quantity: 2 })).toBeNull();
   });
+
+  it("lets pre-order lines bypass stock caps", () => {
+    expect(clampCartQuantity(1, 0, true)).toBe(1);
+    expect(clampCartQuantity(500, 0, true)).toBe(MAX_LINE_QUANTITY);
+    expect(lineWarning({ stock: 0, quantity: 2, isPreOrder: true })).toBe(
+      "Pre-order · ships when restocked",
+    );
+    expect(lineWarning({ stock: 4, quantity: 2, isPreOrder: true })).toBeNull();
+  });
 });

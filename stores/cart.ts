@@ -13,7 +13,7 @@ import {
 
 export { MAX_LINE_QUANTITY };
 export const CART_STORAGE_KEY = "vapeshop-cart";
-export const CART_SCHEMA_VERSION = 1;
+export const CART_SCHEMA_VERSION = 2;
 
 export type CartLine = {
   variantId: string;
@@ -26,6 +26,7 @@ export type CartLine = {
   imageUrl: string | null;
   imageAlt: string;
   stock: number;
+  isPreOrder: boolean;
   quantity: number;
 };
 
@@ -47,7 +48,7 @@ export const useCartStore = create<CartState>()(
       lines: [],
       addLine: (line, quantity = 1) =>
         set((state) => {
-          const capped = clampCartQuantity(quantity, line.stock);
+          const capped = clampCartQuantity(quantity, line.stock, line.isPreOrder);
           if (capped <= 0) return state;
           const existing = state.lines.find((item) => item.variantId === line.variantId);
           if (existing) {
@@ -57,7 +58,11 @@ export const useCartStore = create<CartState>()(
                   ? {
                       ...item,
                       ...line,
-                      quantity: clampCartQuantity(item.quantity + capped, line.stock),
+                      quantity: clampCartQuantity(
+                        item.quantity + capped,
+                        line.stock,
+                        line.isPreOrder,
+                      ),
                     }
                   : item,
               ),
@@ -69,7 +74,14 @@ export const useCartStore = create<CartState>()(
         set((state) => ({
           lines: state.lines.map((line) =>
             line.variantId === variantId
-              ? { ...line, quantity: clampCartQuantity(line.quantity + 1, line.stock) }
+              ? {
+                  ...line,
+                  quantity: clampCartQuantity(
+                    line.quantity + 1,
+                    line.stock,
+                    line.isPreOrder,
+                  ),
+                }
               : line,
           ),
         })),
@@ -77,7 +89,14 @@ export const useCartStore = create<CartState>()(
         set((state) => ({
           lines: state.lines.map((line) =>
             line.variantId === variantId
-              ? { ...line, quantity: clampCartQuantity(line.quantity - 1, line.stock) }
+              ? {
+                  ...line,
+                  quantity: clampCartQuantity(
+                    line.quantity - 1,
+                    line.stock,
+                    line.isPreOrder,
+                  ),
+                }
               : line,
           ),
         })),
@@ -85,7 +104,10 @@ export const useCartStore = create<CartState>()(
         set((state) => ({
           lines: state.lines.map((line) =>
             line.variantId === variantId
-              ? { ...line, quantity: clampCartQuantity(quantity, line.stock) }
+              ? {
+                  ...line,
+                  quantity: clampCartQuantity(quantity, line.stock, line.isPreOrder),
+                }
               : line,
           ),
         })),
@@ -103,13 +125,15 @@ export const useCartStore = create<CartState>()(
         const value = persisted as { lines?: CartLine[] } | undefined;
         if (!value?.lines || !Array.isArray(value.lines)) return { lines: [] };
         return {
-          lines: value.lines.filter(
-            (line) =>
-              typeof line?.variantId === "string" &&
-              typeof line.productName === "string" &&
-              Number.isInteger(line.quantity) &&
-              line.quantity > 0,
-          ),
+          lines: value.lines
+            .filter(
+              (line) =>
+                typeof line?.variantId === "string" &&
+                typeof line.productName === "string" &&
+                Number.isInteger(line.quantity) &&
+                line.quantity > 0,
+            )
+            .map((line) => ({ ...line, isPreOrder: line.isPreOrder === true })),
         };
       },
     },

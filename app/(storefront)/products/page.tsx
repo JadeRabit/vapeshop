@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CatalogBrowser } from "@/components/storefront/catalog-browser";
 import { ComingSoonCategory } from "@/components/storefront/coming-soon-category";
 import { getCatalogProducts } from "@/lib/data/catalog";
-import { categoryDefinitions } from "@/lib/config";
+import { categoryDefinitions, siteConfig } from "@/lib/config";
 
 type ProductsPageProps = {
   searchParams: Promise<{ category?: string; q?: string }>;
@@ -18,7 +18,7 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
     : "Shop all products";
   return {
     title,
-    description: category?.description ?? "Browse the full Vapor District collection.",
+    description: category?.description ?? `Browse the full ${siteConfig.name} collection.`,
     alternates: { canonical: category ? `/products?category=${category.slug}` : "/products" },
     robots:
       params.q || category?.comingSoon ? { index: false, follow: true } : undefined,

@@ -136,6 +136,15 @@ describe("restock planning", () => {
     ]);
   });
 
+  it("does not restock pre-order lines", () => {
+    expect(
+      getRestockPlan([
+        { variantId: "pre", quantity: 3, isPreOrder: true },
+        { variantId: "regular", quantity: 2 },
+      ]),
+    ).toEqual([{ variantId: "regular", quantity: 2 }]);
+  });
+
   it("rejects non-positive or fractional quantities", () => {
     expect(() => getRestockPlan([{ variantId: "a", quantity: 0 }])).toThrow();
     expect(() => getRestockPlan([{ variantId: "a", quantity: -1 }])).toThrow();

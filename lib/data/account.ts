@@ -49,6 +49,7 @@ export type OrderSummaryDTO = {
   totalCentavos: number;
   itemCount: number;
   itemSummary: string;
+  hasPreOrder: boolean;
   createdAt: string;
 };
 
@@ -56,7 +57,9 @@ export const getOrderSummaries = cache(async (userId: string): Promise<OrderSumm
   const orders = await prisma.order.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
-    include: { items: { select: { productName: true, quantity: true } } },
+    include: {
+      items: { select: { productName: true, quantity: true, isPreOrder: true } },
+    },
   });
 
   return orders.map((order) => ({
@@ -70,6 +73,7 @@ export const getOrderSummaries = cache(async (userId: string): Promise<OrderSumm
       .map((item) => `${item.productName} × ${item.quantity}`)
       .slice(0, 3)
       .join(", "),
+    hasPreOrder: order.items.some((item) => item.isPreOrder),
     createdAt: order.createdAt.toISOString(),
   }));
 });
@@ -111,6 +115,7 @@ export type OrderDetailDTO = {
     unitPriceCentavos: number;
     quantity: number;
     lineTotalCentavos: number;
+    isPreOrder: boolean;
     productSlug: string | null;
   }>;
   events: Array<{
@@ -163,6 +168,7 @@ export const getOrderForUser = cache(
         unitPriceCentavos: item.unitPriceCentavos,
         quantity: item.quantity,
         lineTotalCentavos: item.lineTotalCentavos,
+        isPreOrder: item.isPreOrder,
         productSlug: item.variant.product.slug,
       })),
       events: order.events.map((event) => ({

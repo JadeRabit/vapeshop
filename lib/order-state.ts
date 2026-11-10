@@ -98,10 +98,12 @@ export function restoresStockOnTransition(next: OrderStatusValue) {
  * unit-tested and reused by the admin and expiry paths.
  */
 export function getRestockPlan(
-  items: Array<{ variantId: string; quantity: number }>,
+  items: Array<{ variantId: string; quantity: number; isPreOrder?: boolean }>,
 ): Array<{ variantId: string; quantity: number }> {
   const grouped = new Map<string, number>();
   for (const item of items) {
+    // Pre-order lines never reserved stock, so cancelling them restores nothing.
+    if (item.isPreOrder) continue;
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       throw new Error("Invalid order item quantity.");
     }

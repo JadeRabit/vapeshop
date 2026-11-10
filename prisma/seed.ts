@@ -18,6 +18,7 @@ type DemoVariant = {
   priceCentavos: number;
   stock: number;
   lowStockThreshold?: number;
+  isPreOrder?: boolean;
 };
 
 type DemoProduct = {
@@ -115,6 +116,27 @@ const demoProducts: DemoProduct[] = [
         color: "Silver",
         priceCentavos: 145000,
         stock: 0,
+      },
+    ],
+  },
+  {
+    slug: "eclipse-pod-kit",
+    name: "Eclipse Pod Kit",
+    brand: "Northstar",
+    categorySlug: "pod-systems",
+    shortDescription: "Reserve the next drop: a 1,000mAh pod kit with adjustable airflow.",
+    description:
+      "The Eclipse is Northstar's next compact pod system, pairing a 1,000mAh battery with a 2ml refillable pod and adjustable airflow. This batch is available for pre-order while we wait for the shipment to land. Orders are reserved in sequence and shipped as soon as stock arrives.",
+    isFeatured: true,
+    image: "/products/pod-systems.svg",
+    variants: [
+      {
+        sku: "NS-ECLIPSE-BLK",
+        label: "Midnight Black · Pre-order",
+        color: "Black",
+        priceCentavos: 155000,
+        stock: 0,
+        isPreOrder: true,
       },
     ],
   },
@@ -305,12 +327,12 @@ async function seedAdmin() {
   const admin = await prisma.user.upsert({
     where: { email },
     update: {
-      name: process.env.SEED_ADMIN_NAME?.trim() || "VapeShop Admin",
+      name: process.env.SEED_ADMIN_NAME?.trim() || "SmokeyFruit Admin",
       role: "ADMIN",
       passwordHash,
     },
     create: {
-      name: process.env.SEED_ADMIN_NAME?.trim() || "VapeShop Admin",
+      name: process.env.SEED_ADMIN_NAME?.trim() || "SmokeyFruit Admin",
       email,
       role: "ADMIN",
       passwordHash,
@@ -387,6 +409,7 @@ async function seedDemoData(adminId: string) {
             priceCentavos: variant.priceCentavos,
             stock: variant.stock,
             lowStockThreshold: variant.lowStockThreshold ?? 5,
+            isPreOrder: variant.isPreOrder ?? false,
             isActive: true,
             sortOrder: index,
           },
@@ -400,6 +423,7 @@ async function seedDemoData(adminId: string) {
             priceCentavos: variant.priceCentavos,
             stock: variant.stock,
             lowStockThreshold: variant.lowStockThreshold ?? 5,
+            isPreOrder: variant.isPreOrder ?? false,
             isActive: true,
             sortOrder: index,
           },

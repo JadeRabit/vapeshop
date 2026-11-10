@@ -1,4 +1,4 @@
-# Vapor District
+# SmokeyFruit Co.
 
 A production-oriented, 21+ vape storefront and admin console for the Philippines. Built with Next.js 15 App Router, React 19, Prisma/PostgreSQL, Auth.js, and a dark neon/vapour visual system.
 
@@ -14,8 +14,9 @@ The application covers the complete commerce loop: a persisted 21+ gate, catalog
 - Landing page with featured products, six merchandising categories, compliance messaging, and mobile-first navigation.
 - Instant catalog search across product name, brand, category, variant labels, and flavour profiles.
 - AND-combined filters for category, nicotine strength, flavour profile, price range, and stock.
-- Product detail pages with image gallery, variant selection, per-variant price/stock/SKU, verified-purchase reviews, and review eligibility states.
-- Persistent Zustand cart with stock caps, quantity controls, shipping estimates, and blocked-checkout protection.
+- Product detail pages with image gallery, flavor/option selection, per-variant price/stock/SKU, verified-purchase reviews, and review eligibility states.
+- Variant-level pre-orders: out-of-stock options can be reserved, with clear cart and checkout messaging.
+- Persistent Zustand cart with stock caps, typed quantities, shipping estimates, and blocked-checkout protection.
 - Authenticated three-step checkout with saved or new Philippine addresses.
 - Server-authoritative quote and order placement: prices, variants, stock, addresses, GCash proofs, and totals are rechecked on the server.
 - Atomic stock reservation, idempotent order creation, and clear error states when the cart becomes stale.
@@ -35,7 +36,7 @@ The application covers the complete commerce loop: a persisted 21+ gate, catalog
 - Full order detail with payment metadata, GCash receipt preview, shipping snapshot, and event timeline.
 - Safe, method-aware status transitions; card `PAID` is webhook-only.
 - Transactional cancellation with one-time stock restoration.
-- Product CRUD with dynamic variants, publish validation, image metadata, archive/delete safeguards, and inline stock adjustment.
+- Product CRUD with dynamic variants, publish validation, image metadata, archive/delete safeguards, inline stock adjustment, and per-variant pre-order controls.
 
 ## Stack
 
@@ -43,7 +44,7 @@ The application covers the complete commerce loop: a persisted 21+ gate, catalog
 | --- | --- |
 | Framework | Next.js 15.5 App Router, React 19, strict TypeScript |
 | Styling | Tailwind CSS 4, shadcn/ui on Radix primitives, Lucide icons |
-| Data | PostgreSQL, Prisma 6, Neon serverless adapter with `ws` |
+| Data | PostgreSQL (Supabase or Neon), Prisma 6, pooled runtime URL + direct migration URL |
 | Auth | Auth.js v5 credentials, bcryptjs, JWT sessions, database-backed role checks |
 | State | Zustand persisted cart, React Server Actions |
 | Payments | Stripe hosted Checkout and signature-verified webhook |
@@ -73,7 +74,7 @@ lib/
   data/                   server-only queries returning client-safe DTOs
   validators/             Zod schemas
   auth-guards.ts          session and database-backed RBAC guards
-  db.ts                   Prisma singleton with Neon/local PostgreSQL support
+  db.ts                   Prisma singleton with optional Neon adapter; standard PostgreSQL for Supabase/local
   env.ts                  server-side environment validation
   money.ts                integer-centavo PHP helpers
   order-state.ts          transition matrix and restock planning
@@ -94,7 +95,7 @@ docs/
 ### Prerequisites
 
 - Node.js 20+ and npm.
-- PostgreSQL 15+ (local) or a Neon database branch.
+- PostgreSQL 15+ (local) or a Supabase/Neon project.
 - Optional: Cloudinary and Stripe credentials for uploads/card payments.
 
 ### 1. Install dependencies
@@ -122,7 +123,9 @@ Fill in at minimum:
 - `AUTH_SECRET`
 - `NEXT_PUBLIC_APP_URL`
 
-`DATABASE_URL` is the pooled runtime connection. `DIRECT_URL` is the non-pooled connection used by Prisma migrations and the seed script. For local PostgreSQL both may point at the same database with `sslmode=disable`.
+`DATABASE_URL` is the pooled runtime connection. `DIRECT_URL` is the non-pooled connection used by Prisma migrations and the seed script.
+
+For Supabase, copy the **Transaction pooler** URI (port `6543`) into `DATABASE_URL` with `?pgbouncer=true&connection_limit=1&sslmode=require`, and the **Direct connection** URI (port `5432`) into `DIRECT_URL`. If your network or CI cannot reach the direct host over IPv6, use the Supabase **Session pooler** on port `5432` for `DIRECT_URL` instead. For local PostgreSQL both URLs may point at the same database with `sslmode=disable`.
 
 Generate an auth secret with:
 
@@ -137,6 +140,13 @@ or in PowerShell:
 ```
 
 ### 3. Prepare the database
+
+If PostgreSQL is not installed locally, start the bundled development cluster in a
+separate terminal (data is stored in `.data/postgres`):
+
+```bash
+npm run db:dev
+```
 
 For local development:
 
@@ -223,6 +233,7 @@ npm run typecheck        # strict TypeScript check
 npm test                 # Vitest unit tests
 npm run test:e2e         # Playwright E2E (requires a seeded database)
 
+npm run db:dev           # start the bundled local PostgreSQL cluster
 npm run db:generate      # Prisma client
 npm run db:validate      # validate the schema
 npm run db:migrate       # prisma migrate dev (local)
@@ -285,16 +296,30 @@ Card payment is available only when both Stripe variables are configured. A pend
 
 ## Deployment
 
-The application is designed for Vercel with Neon PostgreSQL. The short version:
+The application is designed for **Vercel + Supabase PostgreSQL**. The short version:
 
-1. Create a Neon database and set pooled/direct URLs.
-2. Set all production environment variables in Vercel.
-3. Run `npm run db:migrate:deploy` and `npm run db:seed` against the production database from a trusted machine or CI job.
-4. Deploy.
-5. Configure the Stripe webhook for `https://your-domain/api/stripe/webhook`.
-6. Confirm the Vercel cron schedule and `CRON_SECRET`.
+1. Create a Supabase project in the region closest to your customers.
+2. From **Project Settings → Database → Connection string**, copy:
+   - **Transaction pooler** (port `6543`) into `DATABASE_URL`, with `?pgbouncer=true&connection_limit=1&sslmode=require`.
+   - **Direct connection** (port `5432`) into `DIRECT_URL`. Use the **Session pooler** on port `5432` instead if the direct host is IPv6-only on your network.
+3. Apply migrations and seed the admin from a trusted machine or CI job:
 
-Full instructions, integration setup, smoke testing, rollback, backup expectations, and launch inputs are in:
+   ```bash
+   npm ci
+   npm run db:migrate:deploy
+   npm run db:seed
+   ```
+
+   Use production `DATABASE_URL`/`DIRECT_URL` for that command, and never enable `SEED_DEMO_DATA=true` on the production database.
+
+4. Import the GitHub repository into Vercel (Framework preset: **Next.js**; build command: `npm run build`).
+5. Add the production environment variables from the table above. At minimum: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `AUTH_URL`, `NEXT_PUBLIC_APP_URL`, and `CRON_SECRET`.
+6. Deploy, then set `NEXT_PUBLIC_APP_URL` and `AUTH_URL` to the final custom domain.
+7. Configure the Stripe webhook for `https://YOUR_DOMAIN/api/stripe/webhook`, and confirm the Vercel cron schedule in `vercel.json`.
+
+The build runs `prisma generate` but never migrations. Apply migrations before deploying a new application revision. `vercel.json` schedules `/api/cron/expire-orders`; the route requires `Authorization: Bearer <CRON_SECRET>`.
+
+Full instructions, Supabase connection details, integration setup, smoke testing, rollback, backup expectations, and launch inputs are in:
 
 - [docs/deployment.md](docs/deployment.md)
 - [docs/operations.md](docs/operations.md)

@@ -25,7 +25,7 @@ export function AddToCartButton({
 }) {
   const addLine = useCartStore((state) => state.addLine);
   const { openCart } = useCartUI();
-  const unavailable = line.stock <= 0;
+  const unavailable = line.stock <= 0 && !line.isPreOrder;
 
   return (
     <Button
@@ -36,7 +36,11 @@ export function AddToCartButton({
       disabled={unavailable}
       onClick={() => {
         addLine(line, quantity);
-        toast.success(`${line.productName} added to cart.`);
+        toast.success(
+          line.isPreOrder && line.stock <= 0
+            ? `${line.productName} added as a pre-order.`
+            : `${line.productName} added to cart.`,
+        );
         openCart();
         onAdded?.();
       }}

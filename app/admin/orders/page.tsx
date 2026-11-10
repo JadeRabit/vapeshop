@@ -227,6 +227,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
                           {order.attentionReason === "PROOF" ? "Needs proof" : "Aging"}
                         </Badge>
                       ) : null}
+                      {order.hasPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
                     </div>
                     <span className="block text-[11px] text-muted-foreground">
                       {formatRelativeTime(order.createdAt)}

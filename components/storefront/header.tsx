@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Search, Sparkles } from "lucide-react";
+import { Search } from "lucide-react";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/components/storefront/account-menu";
 import { CartTrigger } from "@/components/storefront/cart-trigger";
 import { MobileNav } from "@/components/storefront/mobile-nav";
+import { SiteLogo } from "@/components/shared/site-logo";
 import { siteConfig, storefrontNav } from "@/lib/config";
 
 export async function SiteHeader() {
@@ -17,9 +18,7 @@ export async function SiteHeader() {
         <MobileNav user={user} />
 
         <Link href="/" className="flex items-center gap-2.5" aria-label={`${siteConfig.name} home`}>
-          <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_24px_rgba(196,255,77,.22)]">
-            <Sparkles className="size-4" aria-hidden="true" />
-          </span>
+          <SiteLogo priority className="shadow-[0_0_24px_rgba(196,255,77,.12)]" />
           <span className="hidden font-display text-base font-semibold tracking-tight sm:block">
             {siteConfig.name}
           </span>

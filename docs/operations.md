@@ -77,8 +77,8 @@ Run this on a production-like preview first, then repeat the read-only checks im
 Migrations are forward-only; there are no down migrations. Choose the narrowest safe recovery:
 
 - **Bad application code:** roll back Vercel first. If the schema is backward compatible, do not touch the database.
-- **Bad migration:** stop writes (maintenance page or disable checkout), take a snapshot, and restore the affected database/branch from Neon point-in-time recovery or a verified logical backup.
-- **Data corruption:** restore to a separate branch first, inspect it, then promote/switch `DATABASE_URL` and `DIRECT_URL` deliberately.
+- **Bad migration:** stop writes (maintenance page or disable checkout), take a snapshot, and restore the affected Supabase database/project from point-in-time recovery (if enabled on the plan) or a verified logical backup.
+- **Data corruption:** restore to a separate Supabase project/branch first, inspect it, then promote/switch `DATABASE_URL` and `DIRECT_URL` deliberately.
 - **Payment/stock inconsistency:** do not bulk-edit orders in the database. Use the admin transition actions where valid, and reconcile stock with a reviewed SQL transaction after identifying affected variants. Preserve the order event trail.
 
 After a database restore:
@@ -97,13 +97,13 @@ After a database restore:
 
 ## Backups and point-in-time recovery
 
-Neon keeps a restore window determined by the project/plan. Confirm the actual retention before launch and record it in the launch notes.
+Supabase backup and point-in-time recovery retention depend on the project plan (Pro includes daily backups; PITR is an add-on on eligible plans). Confirm the actual retention before launch and record it in the launch notes.
 
 Expectations:
 
-- Enable point-in-time recovery/history for the production branch.
+- Confirm automated backups and, if required, point-in-time recovery are enabled for the production Supabase project.
 - Keep at least one automated logical backup outside the primary region/provider if the plan or business requirements demand it (`pg_dump`/`pg_dumpall` to encrypted object storage).
-- Test a restore into a separate branch at least quarterly.
+- Test a restore into a separate Supabase project at least quarterly.
 - Verify that backups include users, addresses, orders, order items/events, products/variants/images, reviews, and media metadata. Cloudinary assets are external; confirm their retention/backup separately.
 - Encrypt backups at rest and restrict access to the backup bucket.
 - Never restore production data into a preview environment without anonymising PII.
@@ -116,7 +116,7 @@ Expectations:
 1. Rotate the affected secret: `AUTH_SECRET`, Cloudinary, Stripe, or `CRON_SECRET`.
 2. Rotating `AUTH_SECRET` signs out all JWT sessions; confirm that is acceptable or communicate it.
 3. Revoke the old Stripe webhook endpoint and Cloudinary key.
-4. Review Vercel/Stripe/Cloudinary/Neon logs for misuse.
+4. Review Vercel/Stripe/Cloudinary/Supabase logs for misuse.
 5. Check admin users and role changes in the database.
 
 ### Suspected account takeover

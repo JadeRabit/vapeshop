@@ -344,6 +344,7 @@ export default async function AdminProductsPage({ searchParams }: AdminProductsP
                           {product.isActive ? "Published" : "Draft"}
                         </Badge>
                         {product.isFeatured ? <Badge variant="info">Featured</Badge> : null}
+                        {product.hasPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
                       </div>
                     </TableCell>
                     <TableCell className="hidden whitespace-nowrap lg:table-cell">
@@ -353,7 +354,11 @@ export default async function AdminProductsPage({ searchParams }: AdminProductsP
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-sm tabular-nums">{product.totalStock}</span>
                         {product.totalStock === 0 ? (
-                          <Badge variant="destructive">Out</Badge>
+                          product.hasPreOrder ? (
+                            <Badge variant="info">Pre-order</Badge>
+                          ) : (
+                            <Badge variant="destructive">Out</Badge>
+                          )
                         ) : product.isLowStock ? (
                           <Badge variant="warning">Low</Badge>
                         ) : null}

@@ -7,10 +7,11 @@ import { env } from "@/lib/env";
 import { getAddresses } from "@/lib/data/account";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckoutWizard } from "@/components/checkout/checkout-wizard";
+import { siteConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Checkout",
-  description: "Complete your Vapor District order.",
+  description: `Complete your ${siteConfig.name} order.`,
   robots: { index: false, follow: false },
 };
 

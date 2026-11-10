@@ -15,7 +15,10 @@ export function ProductCard({
   priority?: boolean;
 }) {
   const image = product.images[0];
-  const variant = product.variants.find((item) => item.stock > 0) ?? product.variants[0];
+  const variant =
+    product.variants.find((item) => item.stock > 0) ??
+    product.variants.find((item) => item.isPreOrder) ??
+    product.variants[0];
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.09] bg-card transition-colors hover:border-primary/30">
@@ -40,7 +43,7 @@ export function ProductCard({
         )}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
           {product.isFeatured ? <Badge>Featured</Badge> : null}
-          <StockBadge stock={product.totalStock} />
+          <StockBadge stock={product.totalStock} preOrder={product.hasPreOrder} />
         </div>
       </Link>
 
@@ -64,11 +67,11 @@ export function ProductCard({
             </p>
             <Price centavos={product.lowestPriceCentavos} className="text-lg font-semibold" />
           </div>
-          {variant && variant.stock > 0 ? (
+          {variant && (variant.stock > 0 || variant.isPreOrder) ? (
             <AddToCartButton
               size="sm"
               variant="outline"
-              label="Quick add"
+              label={variant.stock > 0 ? "Quick add" : "Pre-order"}
               line={{
                 variantId: variant.id,
                 productId: product.id,
@@ -80,6 +83,7 @@ export function ProductCard({
                 imageUrl: variant.imageUrl ?? image?.url ?? null,
                 imageAlt: variant.imageAlt ?? image?.alt ?? product.name,
                 stock: variant.stock,
+                isPreOrder: variant.isPreOrder,
               }}
             />
           ) : (

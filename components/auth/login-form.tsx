@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loginAction } from "@/lib/actions/auth";
 import { initialActionState } from "@/lib/action-result";
+import { siteConfig } from "@/lib/config";
 
 type LoginFormProps = {
   callbackUrl: string;
@@ -123,7 +124,7 @@ export function LoginForm({ callbackUrl, registered, defaultEmail }: LoginFormPr
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        New to Vapor District?{" "}
+        New to {siteConfig.name}?{" "}
         <Link
           href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
           className="font-semibold text-primary underline-offset-4 hover:underline"

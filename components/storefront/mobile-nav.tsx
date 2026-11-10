@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, MapPin, Menu, Package, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { LogOut, MapPin, Menu, Package, ShieldCheck, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SiteLogo } from "@/components/shared/site-logo";
 import {
   Sheet,
   SheetContent,
@@ -36,9 +37,7 @@ export function MobileNav({ user }: { user: MobileNavUser | null }) {
       <SheetContent side="left" className="w-full sm:max-w-sm">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="size-4" aria-hidden="true" />
-            </span>
+            <SiteLogo className="size-8 rounded-lg" />
             {siteConfig.name}
           </SheetTitle>
           <SheetDescription>21+ storefront navigation</SheetDescription>

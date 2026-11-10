@@ -139,9 +139,10 @@ export default async function OrderSuccessPage({ params }: SuccessPageProps) {
                         item.productName
                       )}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                       {item.variantLabel} · {item.sku} · Qty {item.quantity}
-                    </p>
+                      {item.isPreOrder ? <Badge variant="info">Pre-order</Badge> : null}
+                    </div>
                   </div>
                   <p className="whitespace-nowrap text-sm font-semibold tabular-nums">
                     {formatPhp(item.lineTotalCentavos)}
