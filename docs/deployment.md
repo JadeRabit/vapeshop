@@ -23,7 +23,7 @@ Browser
   └── Stripe hosted Checkout + webhook
 ```
 
-The build does not run migrations and does not query the database. Dynamic database-backed routes require a reachable database at runtime.
+The build does not run migrations. Database-backed routes require a reachable database at runtime.
 
 ## 1. Create the Supabase database
 
